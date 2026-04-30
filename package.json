@@ -1,0 +1,17 @@
+{
+  "name": "yahdong",
+  "private": true,
+  "workspaces": [
+    "yahdong-api",
+    "yahdong-webapp"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace=yahdong-api",
+    "dev:web": "npm run dev --workspace=yahdong-webapp",
+    "build:api": "npm run build --workspace=yahdong-api",
+    "build:web": "npm run build --workspace=yahdong-webapp"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

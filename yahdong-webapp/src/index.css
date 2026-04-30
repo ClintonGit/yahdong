@@ -1,0 +1,154 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Forest Cafe + Ghibli Warm (A+C blend) ────────────── */
+@theme {
+  /* Core palette */
+  --color-primary:  #E8A030;   /* ส้มแสงแดด — A */
+  --color-forest:   #4A7C5E;   /* forest green — A */
+  --color-wood:     #C8956A;   /* wood brown — A */
+  --color-ground:   #2D4A2D;   /* deep ground — A */
+  --color-dong:     #8B6343;   /* สีตัวดองเลย — C */
+  --color-sage:     #7A9E7E;   /* sage green — C */
+  --color-text:     #2C1810;   /* เข้มขึ้นนิด เพิ่ม warmth — C */
+  --color-bg:       #F5EDE0;   /* earthy cream — C (เดิม A คือ #FDF6EC) */
+  --color-card:     #EDE8DC;   /* กระดาษอุ่น — C */
+  --color-paper:    #F9F4ED;   /* สำหรับ popover/modal — blend */
+  --color-border-forest: #D4BC99;  /* border เข้มขึ้นนิด organic — C */
+
+  --font-family-sans:    'IBM Plex Sans Thai', sans-serif;
+  --font-family-heading: 'Kodchasan', sans-serif;
+
+  --radius: 0.875rem;  /* เพิ่มนิดให้ softer — C */
+}
+
+/* ─── shadcn/ui CSS tokens (A+C blend) ──────────────────── */
+:root {
+  /* Core */
+  --background:          #F5EDE0;   /* earthy cream — C */
+  --foreground:          #2C1810;   /* warm dark brown — C */
+
+  /* Card — กระดาษอุ่น */
+  --card:                #EDE8DC;
+  --card-foreground:     #2C1810;
+
+  /* Popover */
+  --popover:             #F9F4ED;
+  --popover-foreground:  #2C1810;
+
+  /* Primary = ส้มแสงแดด */
+  --primary:             #E8A030;
+  --primary-foreground:  #FFFAF2;
+
+  /* Secondary = dong brown — C */
+  --secondary:           #D4BC99;
+  --secondary-foreground: #2C1810;
+
+  /* Muted */
+  --muted:               #E8DDD0;
+  --muted-foreground:    #7A5C3A;
+
+  /* Accent = sage green — C */
+  --accent:              #7A9E7E;
+  --accent-foreground:   #FFFAF2;
+
+  /* Destructive */
+  --destructive:         #C0392B;
+
+  /* Border / Input / Ring */
+  --border:              #D4BC99;
+  --input:               #D4BC99;
+  --ring:                #E8A030;
+
+  /* Radius */
+  --radius:              0.875rem;
+
+  /* Sidebar — wood tone */
+  --sidebar:             #E8DDD0;
+  --sidebar-foreground:  #2C1810;
+  --sidebar-primary:     #E8A030;
+  --sidebar-primary-foreground: #FFFAF2;
+  --sidebar-accent:      #7A9E7E;
+  --sidebar-accent-foreground: #FFFAF2;
+  --sidebar-border:      #D4BC99;
+  --sidebar-ring:        #E8A030;
+
+  /* Charts */
+  --chart-1: #E8A030;
+  --chart-2: #4A7C5E;
+  --chart-3: #8B6343;
+  --chart-4: #7A9E7E;
+  --chart-5: #C8956A;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-family-sans);
+}
+
+#root {
+  min-height: 100svh;
+}
+
+/* ─── shadcn @theme inline mapping ─────────────────────── */
+@theme inline {
+  --font-heading: var(--font-family-heading);
+  --font-sans:    var(--font-family-sans);
+
+  --color-background:    var(--background);
+  --color-foreground:    var(--foreground);
+  --color-card:          var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover:       var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary:       var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:     var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:         var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent:        var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive:   var(--destructive);
+  --color-border:        var(--border);
+  --color-input:         var(--input);
+  --color-ring:          var(--ring);
+  --color-chart-1:       var(--chart-1);
+  --color-chart-2:       var(--chart-2);
+  --color-chart-3:       var(--chart-3);
+  --color-chart-4:       var(--chart-4);
+  --color-chart-5:       var(--chart-5);
+  --color-sidebar:       var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring:  var(--sidebar-ring);
+
+  --radius-sm:  calc(var(--radius) * 0.6);
+  --radius-md:  calc(var(--radius) * 0.8);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
