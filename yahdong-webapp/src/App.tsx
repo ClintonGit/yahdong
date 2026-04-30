@@ -5,6 +5,7 @@ import { queryClient } from './lib/queryClient'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProjectsPage from './pages/ProjectsPage'
+import BoardPage from './pages/BoardPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppShell from './components/AppShell'
 
@@ -40,9 +41,7 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AppShell>
-                  <div className="p-6" style={{ color: 'var(--color-text)' }}>
-                    Kanban board — coming soon
-                  </div>
+                  <BoardPage />
                 </AppShell>
               </ProtectedRoute>
             }

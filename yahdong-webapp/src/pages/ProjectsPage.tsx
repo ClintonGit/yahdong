@@ -19,6 +19,7 @@ export default function ProjectsPage() {
   const [showCreate, setShowCreate] = useState(false)
 
   return (
+    <div className="h-full overflow-y-auto">
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1
@@ -108,6 +109,7 @@ export default function ProjectsPage() {
         open={showCreate}
         onClose={() => setShowCreate(false)}
       />
+    </div>
     </div>
   )
 }

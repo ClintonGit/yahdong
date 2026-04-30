@@ -31,5 +31,12 @@ Thumbs.db
 # Claude Code local settings
 .claude/
 
+# Playwright test artifacts
+yahdong-webapp/test-results/
+yahdong-webapp/playwright-report/
+
+# AI memory (local only)
+memories/
+
 # Prisma
 yahdong-api/prisma/migrations/
