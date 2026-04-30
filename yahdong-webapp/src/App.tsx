@@ -4,26 +4,9 @@ import { Toaster } from './components/ui/sonner'
 import { queryClient } from './lib/queryClient'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ProjectsPage from './pages/ProjectsPage'
 import ProtectedRoute from './components/ProtectedRoute'
-
-function Dashboard() {
-  return (
-    <div
-      className="min-h-screen flex items-center justify-center"
-      style={{ background: 'var(--color-bg)' }}
-    >
-      <p
-        style={{
-          fontFamily: 'var(--font-family-heading)',
-          color: 'var(--color-primary)',
-          fontSize: '2rem',
-        }}
-      >
-        ยินดีต้อนรับสู่ อย่าดอง 🌿
-      </p>
-    </div>
-  )
-}
+import AppShell from './components/AppShell'
 
 export default function App() {
   return (
@@ -36,7 +19,31 @@ export default function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <AppShell>
+                  <Navigate to="/projects" replace />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ProjectsPage />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <div className="p-6" style={{ color: 'var(--color-text)' }}>
+                    Kanban board — coming soon
+                  </div>
+                </AppShell>
               </ProtectedRoute>
             }
           />
