@@ -1,0 +1,110 @@
+import {
+  Injectable, NotFoundException, BadRequestException,
+} from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
+import { CreateTaskDto } from './dto/create-task.dto'
+import { UpdateTaskDto } from './dto/update-task.dto'
+import { MoveTaskDto } from './dto/move-task.dto'
+import { CreateStatusDto } from './dto/create-status.dto'
+import { UpdateStatusDto } from './dto/update-status.dto'
+import { ReorderStatusesDto } from './dto/reorder-statuses.dto'
+
+@Injectable()
+export class TasksService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAll(projectId: string) {
+    return this.prisma.task.findMany({
+      where: { projectId },
+      include: {
+        assignee: { select: { id: true, name: true, avatar: true } },
+        status: true,
+      },
+      orderBy: { order: 'asc' },
+    })
+  }
+
+  async create(projectId: string, userId: string, dto: CreateTaskDto) {
+    const lastTask = await this.prisma.task.findFirst({
+      where: { projectId, statusId: dto.statusId },
+      orderBy: { order: 'desc' },
+    })
+    const order = (lastTask?.order ?? 0) + 1000
+
+    return this.prisma.task.create({
+      data: { ...dto, projectId, createdBy: userId, order },
+      include: { assignee: { select: { id: true, name: true, avatar: true } }, status: true },
+    })
+  }
+
+  async findOne(taskId: string) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        assignee: { select: { id: true, name: true, avatar: true } },
+        status: true,
+        _count: { select: { comments: true } },
+      },
+    })
+    if (!task) throw new NotFoundException()
+    return task
+  }
+
+  async update(taskId: string, dto: UpdateTaskDto) {
+    return this.prisma.task.update({
+      where: { id: taskId },
+      data: dto,
+      include: { assignee: { select: { id: true, name: true, avatar: true } }, status: true },
+    })
+  }
+
+  async remove(taskId: string) {
+    await this.prisma.task.delete({ where: { id: taskId } })
+  }
+
+  async move(taskId: string, dto: MoveTaskDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const task = await tx.task.findUnique({ where: { id: taskId } })
+      if (!task) throw new NotFoundException()
+      return tx.task.update({
+        where: { id: taskId },
+        data: { statusId: dto.statusId, order: dto.order },
+      })
+    })
+  }
+
+  // Statuses
+  async findStatuses(projectId: string) {
+    return this.prisma.taskStatus.findMany({
+      where: { projectId },
+      orderBy: { order: 'asc' },
+    })
+  }
+
+  async createStatus(projectId: string, dto: CreateStatusDto) {
+    const last = await this.prisma.taskStatus.findFirst({
+      where: { projectId }, orderBy: { order: 'desc' },
+    })
+    return this.prisma.taskStatus.create({
+      data: { ...dto, projectId, order: (last?.order ?? 0) + 1000 },
+    })
+  }
+
+  async updateStatus(statusId: string, dto: UpdateStatusDto) {
+    return this.prisma.taskStatus.update({ where: { id: statusId }, data: dto })
+  }
+
+  async removeStatus(statusId: string) {
+    const count = await this.prisma.task.count({ where: { statusId } })
+    if (count > 0) throw new BadRequestException('ย้าย tasks ออกก่อนลบ column นี้')
+    await this.prisma.taskStatus.delete({ where: { id: statusId } })
+  }
+
+  async reorderStatuses(projectId: string, dto: ReorderStatusesDto) {
+    await this.prisma.$transaction(
+      dto.orderedIds.map((id, i) =>
+        this.prisma.taskStatus.update({ where: { id }, data: { order: (i + 1) * 1000 } }),
+      ),
+    )
+  }
+}
