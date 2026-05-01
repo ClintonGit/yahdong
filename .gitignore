@@ -38,5 +38,5 @@ yahdong-webapp/playwright-report/
 # AI memory (local only)
 memories/
 
-# Prisma
-yahdong-api/prisma/migrations/
+# Prisma — migrations MUST be committed for `prisma migrate deploy` in CI/CD
+# yahdong-api/prisma/migrations/

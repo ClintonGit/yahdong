@@ -1,0 +1,7 @@
+yahdong.commsk.dev {
+    reverse_proxy webapp:80
+}
+
+yahdong-api.commsk.dev {
+    reverse_proxy api:3001
+}
