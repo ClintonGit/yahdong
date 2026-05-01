@@ -29,6 +29,13 @@ export const useAuthStore = create<AuthState>()(
       clearAuth: () =>
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
     }),
-    { name: 'yahdong-auth', partialize: (s) => ({ refreshToken: s.refreshToken }) }
+    {
+      name: 'yahdong-auth',
+      partialize: (s) => ({
+        user: s.user,
+        refreshToken: s.refreshToken,
+        isAuthenticated: s.isAuthenticated,
+      }),
+    }
   )
 )

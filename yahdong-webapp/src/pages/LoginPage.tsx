@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { useAuthStore } from '../stores/authStore'
 import { authApi } from '../api/auth'
 import { useState } from 'react'
+import hero from '../assets/hero.png'
 
 const schema = z.object({
   email: z.string().email('อีเมลไม่ถูกต้อง'),
@@ -50,6 +51,9 @@ export default function LoginPage() {
     >
       <Card className="w-full max-w-sm shadow-md" style={{ background: 'var(--color-card)' }}>
         <CardHeader className="text-center space-y-1">
+          <div className="flex justify-center mb-1">
+            <img src={hero} alt="อย่าดอง mascot" className="h-28 w-auto drop-shadow-md" />
+          </div>
           <CardTitle
             className="text-3xl"
             style={{
