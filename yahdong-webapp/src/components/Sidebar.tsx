@@ -13,6 +13,8 @@ import { useAuthStore } from '../stores/authStore'
 import { useProjects } from '../hooks/useProjects'
 import { authApi } from '../api/auth'
 import CreateProjectModal from './CreateProjectModal'
+import dongDefault from '../assets/dong/dong-sticker-01-เห็นอยู่นะ.png'
+import dongEmpty from '../assets/dong/dong-sticker-05-ว่างอยู่.png'
 
 export default function Sidebar() {
   const location = useLocation()
@@ -109,6 +111,25 @@ export default function Sidebar() {
           >
             <span className="text-lg leading-none">+</span> โปรเจคใหม่
           </Button>
+        </div>
+
+        {/* ดอง mascot */}
+        <div className="px-3 pb-2 flex items-end gap-2">
+          <img
+            src={projects && projects.length === 0 ? dongEmpty : dongDefault}
+            alt="ดอง"
+            className="w-16 h-16 object-contain shrink-0"
+          />
+          <div
+            className="relative rounded-2xl rounded-bl-none px-3 py-1.5 text-xs leading-snug mb-1"
+            style={{
+              background: 'var(--color-primary)',
+              color: '#fff',
+              maxWidth: 120,
+            }}
+          >
+            {projects && projects.length === 0 ? 'ว่างอยู่เลย' : 'ดองเห็นอยู่นะ'}
+          </div>
         </div>
 
         {/* User menu */}
