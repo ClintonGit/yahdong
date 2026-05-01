@@ -33,7 +33,7 @@ RUN cd yahdong-api && npx prisma generate
 
 COPY --from=builder /app/yahdong-api/dist ./yahdong-api/dist
 
-ENV PATH="/app/node_modules/.bin:$PATH"
+ENV PATH="/app/yahdong-api/node_modules/.bin:/app/node_modules/.bin:$PATH"
 USER app
 WORKDIR /app/yahdong-api
 EXPOSE 3001

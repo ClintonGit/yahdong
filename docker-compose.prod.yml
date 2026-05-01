@@ -3,39 +3,18 @@ services:
     image: ghcr.io/clintongit/yahdong-api:latest
     env_file: .env
     restart: unless-stopped
-    expose:
-      - "3001"
+    ports:
+      - "127.0.0.1:3001:3001"
     networks:
       - internal
 
   webapp:
     image: ghcr.io/clintongit/yahdong-webapp:latest
     restart: unless-stopped
-    expose:
-      - "80"
-    networks:
-      - internal
-
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - api
-      - webapp
+      - "127.0.0.1:3080:80"
     networks:
       - internal
-
-volumes:
-  caddy_data:
-  caddy_config:
 
 networks:
   internal:
