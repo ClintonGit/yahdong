@@ -17,7 +17,11 @@ jobs:
         with:
           node-version: '20'
 
-      - run: npm ci --include=optional
+      - run: npm ci
+
+      - name: Fix rolldown optional native binding (npm workspace bug)
+        working-directory: yahdong-webapp
+        run: npm install --include=optional
 
       - name: Generate Prisma client
         run: cd yahdong-api && npx prisma generate
