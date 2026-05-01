@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/clintonmsk/yahdong-api:latest
+    image: ghcr.io/clintongit/yahdong-api:latest
     env_file: .env
     restart: unless-stopped
     expose:
@@ -9,7 +9,7 @@ services:
       - internal
 
   webapp:
-    image: ghcr.io/clintonmsk/yahdong-webapp:latest
+    image: ghcr.io/clintongit/yahdong-webapp:latest
     restart: unless-stopped
     expose:
       - "80"

@@ -4,10 +4,6 @@ on:
   push:
     branches: [master]
 
-env:
-  REGISTRY: ghcr.io
-  OWNER: ${{ github.repository_owner }}
-
 jobs:
   build-and-push:
     name: Build & Push Images
@@ -29,27 +25,27 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push API image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: yahdong-api/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ env.OWNER }}/yahdong-api:${{ github.sha }}
-            ghcr.io/${{ env.OWNER }}/yahdong-api:latest
+            ghcr.io/clintongit/yahdong-api:${{ github.sha }}
+            ghcr.io/clintongit/yahdong-api:latest
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
       - name: Build & push webapp image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: yahdong-webapp/Dockerfile
           push: true
           build-args: VITE_API_URL=https://yahdong-api.commsk.dev
           tags: |
-            ghcr.io/${{ env.OWNER }}/yahdong-webapp:${{ github.sha }}
-            ghcr.io/${{ env.OWNER }}/yahdong-webapp:latest
+            ghcr.io/clintongit/yahdong-webapp:${{ github.sha }}
+            ghcr.io/clintongit/yahdong-webapp:latest
           cache-from: type=gha,scope=webapp
           cache-to: type=gha,mode=max,scope=webapp
 
@@ -68,10 +64,7 @@ jobs:
           script: |
             set -e
             cd ~/yahdong
-
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker compose -f docker-compose.prod.yml exec -T api prisma migrate deploy
             docker image prune -f
-
-            echo "Deployed ${{ github.sha }}"
