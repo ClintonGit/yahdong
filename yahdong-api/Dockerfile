@@ -37,4 +37,4 @@ ENV PATH="/app/yahdong-api/node_modules/.bin:/app/node_modules/.bin:$PATH"
 USER app
 WORKDIR /app/yahdong-api
 EXPOSE 3001
-CMD ["sh", "-c", "prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "prisma migrate deploy && node dist/src/main.js"]
