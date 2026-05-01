@@ -4,7 +4,8 @@ import { PrismaClient } from '@prisma/client'
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
-    super({ datasourceUrl: process.env.DATABASE_URL })
+    // Prisma 7 runtime requires a truthy options object; DATABASE_URL is read from process.env
+    super({})
   }
 
   async onModuleInit() {
