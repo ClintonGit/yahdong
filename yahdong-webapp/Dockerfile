@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY yahdong-api/package*.json ./yahdong-api/
 COPY yahdong-webapp/package*.json ./yahdong-webapp/
-RUN npm ci
+# npm install (not ci) so platform-specific optional deps resolve for linux
+RUN npm install --prefer-offline 2>/dev/null || npm install
 
 COPY yahdong-webapp ./yahdong-webapp
 
