@@ -28,6 +28,7 @@ jobs:
           context: .
           file: yahdong-api/Dockerfile
           push: true
+          no-cache: true
           tags: |
             ghcr.io/clintongit/yahdong-api:${{ github.sha }}
             ghcr.io/clintongit/yahdong-api:latest
@@ -38,6 +39,7 @@ jobs:
           context: .
           file: yahdong-webapp/Dockerfile
           push: true
+          no-cache: true
           build-args: VITE_API_URL=https://yahdong-api.commsk.dev
           tags: |
             ghcr.io/clintongit/yahdong-webapp:${{ github.sha }}
