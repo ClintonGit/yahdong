@@ -17,7 +17,7 @@ jobs:
         with:
           node-version: '20'
 
-      - run: npm ci
+      - run: npm ci --include=optional
 
       - name: Generate Prisma client
         run: cd yahdong-api && npx prisma generate
