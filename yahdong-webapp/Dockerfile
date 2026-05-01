@@ -1,7 +1,7 @@
 # Build context: monorepo root
 # docker build -f yahdong-webapp/Dockerfile --build-arg VITE_API_URL=https://yahdong-api.commsk.dev .
 
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 COPY package*.json ./
