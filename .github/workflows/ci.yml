@@ -19,6 +19,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Generate Prisma client
+        run: cd yahdong-api && npx prisma generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost/ci
+
       - run: npm run build:api
 
       - name: Build webapp
