@@ -3,12 +3,7 @@ services:
     image: ghcr.io/clintongit/yahdong-api:latest
     env_file: .env
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:3001:3001"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - internal
+    network_mode: host
 
   webapp:
     image: ghcr.io/clintongit/yahdong-webapp:latest
