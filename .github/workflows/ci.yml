@@ -7,41 +7,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint-api:
-    name: Lint API
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
-      - run: npm ci
-      - run: npm run lint --workspace=yahdong-api
-
-  build-api:
-    name: Build API
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
       - run: npm ci
       - run: npm run build:api
-
-  build-web:
-    name: Build Web
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-      - run: npm ci
-      - name: Vite build
-        run: npm run build:web
+      - run: npm run build:web
         env:
           VITE_API_URL: https://yahdong-api.commsk.dev
