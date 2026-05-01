@@ -17,11 +17,8 @@ jobs:
         with:
           node-version: '20'
 
-      - run: npm ci
-
-      - name: Fix rolldown optional native binding (npm workspace bug)
-        working-directory: yahdong-webapp
-        run: npm install --include=optional
+      - name: Install deps (no lockfile — mirrors Dockerfile for cross-platform optional deps)
+        run: rm -f package-lock.json && npm install
 
       - name: Generate Prisma client
         run: cd yahdong-api && npx prisma generate
