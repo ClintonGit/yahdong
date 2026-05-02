@@ -8,6 +8,7 @@ import {
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
+import { Textarea } from '../ui/textarea'
 import type { Task, TaskPriority } from '../../api/tasks'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
 
@@ -86,18 +87,12 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
 
           <div className="space-y-1">
             <Label style={{ color: 'var(--color-text)' }}>รายละเอียด</Label>
-            <textarea
+            <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="รายละเอียดงาน..."
-              className="w-full px-3 py-2 text-sm rounded-lg border outline-none resize-none
-                         focus:ring-1 focus:ring-orange-400"
-              style={{
-                background: 'var(--color-card)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text)',
-              }}
+              className="text-sm"
             />
           </div>
 

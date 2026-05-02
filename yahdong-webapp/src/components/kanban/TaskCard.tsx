@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Task } from '../../api/tasks'
@@ -24,8 +25,21 @@ export default function TaskCard({ task, onClick }: Props) {
     isDragging,
   } = useSortable({ id: task.id, data: { type: 'task', task } })
 
-  const isOverdue =
-    task.dueDate != null && new Date(task.dueDate) < new Date()
+  // ป้องกัน onClick ยิงหลัง drag drop
+  const wasDragging = useRef(false)
+  useEffect(() => {
+    if (isDragging) wasDragging.current = true
+  }, [isDragging])
+
+  const handleClick = () => {
+    if (wasDragging.current) {
+      wasDragging.current = false
+      return
+    }
+    onClick()
+  }
+
+  const isOverdue = task.dueDate != null && new Date(task.dueDate) < new Date()
   const prioColor = PRIORITY_COLOR[task.priority] ?? '#94A3B8'
 
   return (
@@ -40,7 +54,7 @@ export default function TaskCard({ task, onClick }: Props) {
       }}
       {...attributes}
       {...listeners}
-      onClick={onClick}
+      onClick={handleClick}
       className="p-3 rounded-xl border cursor-grab active:cursor-grabbing
                  select-none hover:shadow-sm transition-shadow"
     >
@@ -65,9 +79,7 @@ export default function TaskCard({ task, onClick }: Props) {
           {task.dueDate ? (
             <span
               className="text-xs"
-              style={{
-                color: isOverdue ? '#EF4444' : 'var(--color-muted-foreground)',
-              }}
+              style={{ color: isOverdue ? '#EF4444' : 'var(--color-muted-foreground)' }}
             >
               {new Date(task.dueDate).toLocaleDateString('th-TH', {
                 day: 'numeric',

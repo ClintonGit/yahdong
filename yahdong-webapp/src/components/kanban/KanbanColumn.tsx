@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities'
 import type { Column } from '../../hooks/useBoard'
 import type { Task } from '../../api/tasks'
 import TaskCard from './TaskCard'
+import { Input } from '../ui/input'
 
 interface Props {
   column: Column
@@ -106,19 +107,13 @@ export default function KanbanColumn({ column, onTaskClick, onAddTask }: Props) 
       >
         {adding ? (
           <form onSubmit={handleAddSubmit} className="space-y-1.5">
-            <input
+            <Input
               autoFocus
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Escape' && setAdding(false)}
               placeholder="ชื่องาน..."
-              className="w-full px-2 py-1.5 text-sm rounded-lg border outline-none
-                         focus:ring-1 focus:ring-orange-400"
-              style={{
-                background: 'var(--color-paper)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text)',
-              }}
+              className="h-8 text-sm"
             />
             <div className="flex gap-1.5">
               <button

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -26,6 +26,9 @@ import {
 } from '../../hooks/useBoard'
 import KanbanColumn from './KanbanColumn'
 import TaskDetailModal from './TaskDetailModal'
+import GlitterEffect from './GlitterEffect'
+import { Input } from '../ui/input'
+import { Button } from '../ui/button'
 
 const COLUMN_COLORS = [
   '#E8A030', '#4A7C5E', '#C8956A', '#8B6343',
@@ -44,13 +47,16 @@ export default function KanbanBoard({ projectId }: Props) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [showAddCol, setShowAddCol] = useState(false)
   const [newColName, setNewColName] = useState('')
+  const [glitterPos, setGlitterPos] = useState<{ x: number; y: number } | null>(null)
+
+  // track origin column เพื่อ detect cross-column drop สำหรับ glitter
+  const dragOriginColId = useRef<string | null>(null)
 
   const moveTask = useMoveTask(projectId)
   const createTask = useCreateTask(projectId)
   const reorderStatuses = useReorderStatuses(projectId)
   const createStatus = useCreateStatus(projectId)
 
-  // Sync from server when not dragging
   useEffect(() => {
     if (!activeTask && !activeColumn) {
       setLocalColumns(serverColumns)
@@ -76,7 +82,9 @@ export default function KanbanBoard({ projectId }: Props) {
   const onDragStart = (event: DragStartEvent) => {
     const type = event.active.data.current?.type as string | undefined
     if (type === 'task') {
-      setActiveTask(event.active.data.current?.task as Task)
+      const task = event.active.data.current?.task as Task
+      dragOriginColId.current = findColOfTask(task.id, localColumns)?.id ?? null
+      setActiveTask(task)
     } else if (type === 'column') {
       setActiveColumn(event.active.data.current?.column as TaskStatus)
     }
@@ -104,7 +112,7 @@ export default function KanbanBoard({ projectId }: Props) {
             : undefined
 
       if (!sourceCol || !targetColId) return prev
-      if (sourceCol.id === targetColId) return prev // same col: SortableContext handles visual
+      if (sourceCol.id === targetColId) return prev
 
       const cols = prev.map((c) => ({ ...c, tasks: [...c.tasks] }))
       const from = cols.find((c) => c.id === sourceCol.id)!
@@ -126,6 +134,9 @@ export default function KanbanBoard({ projectId }: Props) {
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
+    const originColId = dragOriginColId.current
+    dragOriginColId.current = null
+
     setActiveTask(null)
     setActiveColumn(null)
 
@@ -138,6 +149,7 @@ export default function KanbanBoard({ projectId }: Props) {
 
     if (activeId === overId) return
 
+    // ── Column reorder ──
     if (activeType === 'column') {
       setLocalColumns((prev) => {
         const fromIdx = prev.findIndex((c) => c.id === activeId)
@@ -150,41 +162,52 @@ export default function KanbanBoard({ projectId }: Props) {
       return
     }
 
-    if (activeType === 'task') {
-      setLocalColumns((prev) => {
-        const targetColId =
-          overType === 'task'
-            ? findColOfTask(overId, prev)?.id
-            : overType === 'column' && isColumnId(overId, prev)
-              ? overId
-              : findColOfTask(activeId, prev)?.id
+    // ── Task move ──
+    if (activeType !== 'task') return
 
-        if (!targetColId) return prev
+    const targetColId =
+      overType === 'task'
+        ? findColOfTask(overId, localColumns)?.id
+        : overType === 'column' && isColumnId(overId, localColumns)
+          ? overId
+          : findColOfTask(activeId, localColumns)?.id
 
-        const cols = prev.map((c) => ({ ...c, tasks: [...c.tasks] }))
-        const targetCol = cols.find((c) => c.id === targetColId)!
+    if (!targetColId) return
 
-        // Handle same-column reorder (cross-col was handled in onDragOver)
-        if (overType === 'task') {
-          const fromIdx = targetCol.tasks.findIndex((t) => t.id === activeId)
-          const toIdx = targetCol.tasks.findIndex((t) => t.id === overId)
-          if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
-            targetCol.tasks = arrayMove(targetCol.tasks, fromIdx, toIdx)
-          }
-        }
-
-        const taskIdx = targetCol.tasks.findIndex((t) => t.id === activeId)
-        if (taskIdx === -1) return prev
-
-        const prevOrder = targetCol.tasks[taskIdx - 1]?.order ?? 0
-        const nextOrder = targetCol.tasks[taskIdx + 1]?.order
-        const newOrder =
-          nextOrder != null ? (prevOrder + nextOrder) / 2 : prevOrder + 1000
-
-        moveTask.mutate({ taskId: activeId, statusId: targetColId, order: newOrder })
-        return cols
-      })
+    // 🎉 Glitter เมื่อลากข้ามคอลัมน์
+    if (originColId && targetColId !== originColId) {
+      const rect = active.rect.current.translated
+      if (rect) {
+        setGlitterPos({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        })
+      }
     }
+
+    setLocalColumns((prev) => {
+      const cols = prev.map((c) => ({ ...c, tasks: [...c.tasks] }))
+      const targetCol = cols.find((c) => c.id === targetColId)!
+
+      if (overType === 'task') {
+        const fromIdx = targetCol.tasks.findIndex((t) => t.id === activeId)
+        const toIdx = targetCol.tasks.findIndex((t) => t.id === overId)
+        if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+          targetCol.tasks = arrayMove(targetCol.tasks, fromIdx, toIdx)
+        }
+      }
+
+      const taskIdx = targetCol.tasks.findIndex((t) => t.id === activeId)
+      if (taskIdx === -1) return prev
+
+      const prevOrder = targetCol.tasks[taskIdx - 1]?.order ?? 0
+      const nextOrder = targetCol.tasks[taskIdx + 1]?.order
+      const newOrder =
+        nextOrder != null ? (prevOrder + nextOrder) / 2 : prevOrder + 1000
+
+      moveTask.mutate({ taskId: activeId, statusId: targetColId, order: newOrder })
+      return cols
+    })
   }
 
   const handleAddTask = (statusId: string, title: string) => {
@@ -260,39 +283,31 @@ export default function KanbanBoard({ projectId }: Props) {
                     border: '1px solid var(--color-border)',
                   }}
                 >
-                  <input
+                  <Input
                     autoFocus
                     value={newColName}
                     onChange={(e) => setNewColName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Escape' && setShowAddCol(false)}
                     placeholder="ชื่อคอลัมน์..."
-                    className="w-full px-2 py-1.5 text-sm rounded-lg border outline-none
-                               focus:ring-1 focus:ring-orange-400"
-                    style={{
-                      background: 'var(--color-paper)',
-                      borderColor: 'var(--color-border)',
-                      color: 'var(--color-text)',
-                    }}
+                    className="h-8 text-sm"
                   />
                   <div className="flex gap-1.5">
-                    <button
+                    <Button
                       type="submit"
-                      className="flex-1 py-1.5 text-sm rounded-lg font-medium"
+                      size="sm"
+                      className="flex-1 text-sm"
                       style={{ background: 'var(--color-primary)', color: 'white' }}
                     >
                       เพิ่ม
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      size="sm"
+                      variant="ghost"
                       onClick={() => setShowAddCol(false)}
-                      className="px-3 py-1.5 text-sm rounded-lg"
-                      style={{
-                        background: 'var(--color-muted)',
-                        color: 'var(--color-muted-foreground)',
-                      }}
                     >
                       ยกเลิก
-                    </button>
+                    </Button>
                   </div>
                 </form>
               ) : (
@@ -355,6 +370,15 @@ export default function KanbanBoard({ projectId }: Props) {
           projectId={projectId}
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
+        />
+      )}
+
+      {/* 🎉 Glitter snap effect */}
+      {glitterPos && (
+        <GlitterEffect
+          x={glitterPos.x}
+          y={glitterPos.y}
+          onDone={() => setGlitterPos(null)}
         />
       )}
     </>
