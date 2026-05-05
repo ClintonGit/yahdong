@@ -5,7 +5,6 @@ import {
   UserIcon,
   FlagIcon,
   ArrowRightIcon,
-  CalendarIcon,
   Trash2Icon,
   CheckIcon,
   ChevronRightIcon,

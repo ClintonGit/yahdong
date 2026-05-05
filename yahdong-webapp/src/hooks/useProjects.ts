@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { projectsApi, type CreateProjectInput } from '../api/projects'
+import { projectsApi, type CreateProjectInput, type UpdateProjectInput } from '../api/projects'
 
 export const PROJECT_KEYS = {
   all: ['projects'] as const,
@@ -18,6 +18,23 @@ export function useCreateProject() {
   return useMutation({
     mutationFn: (data: CreateProjectInput) =>
       projectsApi.create(data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PROJECT_KEYS.all }),
+  })
+}
+
+export function useUpdateProject() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string } & UpdateProjectInput) =>
+      projectsApi.update(id, data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PROJECT_KEYS.all }),
+  })
+}
+
+export function useDeleteProject() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => projectsApi.delete(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: PROJECT_KEYS.all }),
   })
 }
@@ -43,7 +60,6 @@ export function useToggleShare() {
   return useMutation({
     mutationFn: (projectId: string) =>
       projectsApi.toggleShare(projectId).then((r) => r.data),
-    onSuccess: (_data, projectId) =>
-      qc.invalidateQueries({ queryKey: PROJECT_KEYS.detail(projectId) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PROJECT_KEYS.all }),
   })
 }

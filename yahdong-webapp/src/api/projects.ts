@@ -5,6 +5,7 @@ export interface Project {
   name: string
   description?: string
   color: string
+  coverImage?: string | null
   isPublic?: boolean
   shareToken?: string | null
   myRole: 'owner' | 'member' | 'viewer'
@@ -26,11 +27,18 @@ export interface CreateProjectInput {
   color?: string
 }
 
+export interface UpdateProjectInput {
+  name?: string
+  description?: string
+  color?: string
+  coverImage?: string | null
+}
+
 export const projectsApi = {
   list: () => api.get<Project[]>('/projects'),
   get: (id: string) => api.get<Project>(`/projects/${id}`),
   create: (data: CreateProjectInput) => api.post<Project>('/projects', data),
-  update: (id: string, data: Partial<CreateProjectInput>) =>
+  update: (id: string, data: UpdateProjectInput) =>
     api.patch<Project>(`/projects/${id}`, data),
   delete: (id: string) => api.delete(`/projects/${id}`),
   getMembers: (id: string) => api.get<ProjectMember[]>(`/projects/${id}/members`),

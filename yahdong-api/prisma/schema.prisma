@@ -75,6 +75,7 @@ model Project {
   slug        String
   description String?
   color       String?
+  coverImage  String?
   isPublic    Boolean   @default(false)
   shareToken  String?   @unique
   deletedAt   DateTime?
