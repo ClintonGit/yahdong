@@ -9,20 +9,17 @@ on:
 jobs:
   build:
     name: Build Check
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        run: |
-          if [ -d .git ]; then
-            git fetch origin
-            git reset --hard ${{ github.sha }}
-            git clean -fdx
-          else
-            git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git .
-          fi
+      - uses: actions/checkout@v4
 
-      - name: Install deps (no lockfile — mirrors Dockerfile for cross-platform optional deps)
-        run: rm -f package-lock.json && npm install
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
 
       - name: Generate Prisma client
         run: cd yahdong-api && npx prisma generate
