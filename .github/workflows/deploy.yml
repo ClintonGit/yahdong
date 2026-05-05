@@ -28,7 +28,7 @@ jobs:
 
       - name: Build & push API image
         run: |
-          docker build --no-cache \
+          docker build \
             -f yahdong-api/Dockerfile \
             -t ghcr.io/clintongit/yahdong-api:${{ github.sha }} \
             -t ghcr.io/clintongit/yahdong-api:latest \
@@ -38,7 +38,7 @@ jobs:
 
       - name: Build & push webapp image
         run: |
-          docker build --no-cache \
+          docker build \
             --build-arg VITE_API_URL=https://yahdong-api.commsk.dev \
             -f yahdong-webapp/Dockerfile \
             -t ghcr.io/clintongit/yahdong-webapp:${{ github.sha }} \
