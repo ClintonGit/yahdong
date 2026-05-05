@@ -9,6 +9,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
+import { DatePicker } from '../ui/date-picker'
 import type { Task, TaskPriority } from '../../api/tasks'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
 import CommentSection from './CommentSection'
@@ -124,14 +125,10 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
 
           <div className="space-y-1">
             <Label style={{ color: 'var(--color-text)' }}>กำหนดส่ง</Label>
-            <Input
-              type="date"
+            <DatePicker
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              style={{
-                background: 'var(--color-card)',
-                borderColor: 'var(--color-border)',
-              }}
+              onChange={setDueDate}
+              placeholder="เลือกวันกำหนดส่ง"
             />
           </div>
 
