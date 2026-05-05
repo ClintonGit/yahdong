@@ -2,6 +2,7 @@ import {
   Injectable, NotFoundException, BadRequestException,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
+import { EmailService } from '../email/email.service'
 import { CreateTaskDto } from './dto/create-task.dto'
 import { UpdateTaskDto } from './dto/update-task.dto'
 import { MoveTaskDto } from './dto/move-task.dto'
@@ -11,7 +12,10 @@ import { ReorderStatusesDto } from './dto/reorder-statuses.dto'
 
 @Injectable()
 export class TasksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
 
   async findAll(projectId: string) {
     return this.prisma.task.findMany({
@@ -50,11 +54,51 @@ export class TasksService {
     return task
   }
 
-  async update(taskId: string, dto: UpdateTaskDto) {
-    return this.prisma.task.update({
+  async update(taskId: string, actorId: string, dto: UpdateTaskDto) {
+    const oldAssigneeId = dto.assigneeId !== undefined
+      ? (await this.prisma.task.findUnique({ where: { id: taskId }, select: { assigneeId: true, projectId: true } }))
+      : null
+
+    const task = await this.prisma.task.update({
       where: { id: taskId },
       data: dto,
-      include: { assignee: { select: { id: true, name: true, avatar: true } }, status: true },
+      include: {
+        assignee: { select: { id: true, name: true, email: true, avatar: true } },
+        status: true,
+      },
+    })
+
+    if (
+      oldAssigneeId &&
+      dto.assigneeId &&
+      dto.assigneeId !== oldAssigneeId.assigneeId &&
+      task.assignee
+    ) {
+      void this.fireAssigneeEmail(task.id, task.title, oldAssigneeId.projectId, task.assignee, actorId)
+    }
+
+    return task
+  }
+
+  private async fireAssigneeEmail(
+    _taskId: string,
+    taskTitle: string,
+    projectId: string,
+    assignee: { name: string; email: string },
+    actorId: string,
+  ) {
+    const [actor, project] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: actorId }, select: { name: true } }),
+      this.prisma.project.findUnique({ where: { id: projectId }, select: { name: true } }),
+    ])
+    if (!actor || !project) return
+    void this.email.sendTaskAssigned({
+      assigneeName: assignee.name,
+      assigneeEmail: assignee.email,
+      assignerName: actor.name,
+      taskTitle,
+      projectName: project.name,
+      projectId,
     })
   }
 

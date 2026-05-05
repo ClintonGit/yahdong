@@ -2,6 +2,7 @@ import {
   Injectable, NotFoundException, ConflictException, BadRequestException,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
+import { EmailService } from '../email/email.service'
 import { CreateProjectDto } from './dto/create-project.dto'
 import { UpdateProjectDto } from './dto/update-project.dto'
 import { InviteMemberDto } from './dto/invite-member.dto'
@@ -15,7 +16,10 @@ const DEFAULT_STATUSES = [
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
 
   async findAll(userId: string) {
     const memberships = await this.prisma.projectMember.findMany({
@@ -85,19 +89,35 @@ export class ProjectsService {
     })
   }
 
-  async inviteMember(projectId: string, dto: InviteMemberDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } })
-    if (!user) throw new NotFoundException('User not found')
+  async inviteMember(projectId: string, inviterId: string, dto: InviteMemberDto) {
+    const [invitee, inviter, project] = await Promise.all([
+      this.prisma.user.findUnique({ where: { email: dto.email } }),
+      this.prisma.user.findUnique({ where: { id: inviterId }, select: { name: true } }),
+      this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true, name: true } }),
+    ])
+    if (!invitee) throw new NotFoundException('User not found')
 
     const exists = await this.prisma.projectMember.findUnique({
-      where: { projectId_userId: { projectId, userId: user.id } },
+      where: { projectId_userId: { projectId, userId: invitee.id } },
     })
     if (exists) throw new ConflictException('Already a member')
 
-    return this.prisma.projectMember.create({
-      data: { projectId, userId: user.id, role: dto.role },
+    const member = await this.prisma.projectMember.create({
+      data: { projectId, userId: invitee.id, role: dto.role },
       include: { user: { select: { id: true, name: true, avatar: true } } },
     })
+
+    if (inviter && project) {
+      void this.email.sendProjectInvite({
+        inviteeName: invitee.name,
+        inviteeEmail: invitee.email,
+        inviterName: inviter.name,
+        projectName: project.name,
+        projectId: project.id,
+      })
+    }
+
+    return member
   }
 
   async updateMember(projectId: string, userId: string, dto: UpdateMemberDto, currentUserId: string) {

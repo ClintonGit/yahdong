@@ -38,8 +38,12 @@ export class TasksController {
   }
 
   @Patch('tasks/:taskId')
-  update(@Param('taskId') id: string, @Body() dto: UpdateTaskDto) {
-    return this.tasks.update(id, dto)
+  update(
+    @Param('taskId') id: string,
+    @Body() dto: UpdateTaskDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.tasks.update(id, user.sub, dto)
   }
 
   @Delete('tasks/:taskId')

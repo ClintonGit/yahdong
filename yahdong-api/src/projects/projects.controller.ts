@@ -51,8 +51,12 @@ export class ProjectsController {
   @Post(':id/members')
   @UseGuards(ProjectGuard)
   @Roles('owner')
-  inviteMember(@Param('id') id: string, @Body() dto: InviteMemberDto) {
-    return this.projects.inviteMember(id, dto)
+  inviteMember(
+    @Param('id') id: string,
+    @Body() dto: InviteMemberDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projects.inviteMember(id, user.sub, dto)
   }
 
   @Patch(':id/members/:userId')
