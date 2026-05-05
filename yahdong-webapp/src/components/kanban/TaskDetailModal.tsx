@@ -8,8 +8,8 @@ import {
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { Textarea } from '../ui/textarea'
 import { DatePicker } from '../ui/date-picker'
+import { RichTextEditor } from '../ui/rich-text-editor'
 import { PaletteIcon, XIcon, ImageIcon } from 'lucide-react'
 import type { Task, TaskPriority } from '../../api/tasks'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
@@ -91,11 +91,11 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent
         style={{ background: 'var(--color-paper)' }}
-        className="max-w-xl max-h-[90vh] overflow-y-auto p-0"
+        className="max-w-4xl w-full max-h-[92vh] overflow-hidden p-0 flex flex-col"
       >
-        {/* Cover section */}
+        {/* Cover */}
         {hasCover && (
-          <div className="relative h-36 w-full overflow-hidden rounded-t-xl">
+          <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-t-xl">
             {coverImage ? (
               <img
                 src={getFileUrl(coverImage) ?? ''}
@@ -115,181 +115,215 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
           </div>
         )}
 
-        <div className="px-5 pt-4 pb-5 space-y-4">
-          <DialogHeader>
-            <DialogTitle style={{ color: 'var(--color-text)', fontFamily: 'var(--font-family-heading)' }}>
-              รายละเอียดงาน
-            </DialogTitle>
-          </DialogHeader>
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1">
+          <div className="px-6 pt-5 pb-6">
+            <DialogHeader className="mb-4">
+              <DialogTitle style={{ color: 'var(--color-text)', fontFamily: 'var(--font-family-heading)', fontSize: '1.1rem' }}>
+                รายละเอียดงาน
+              </DialogTitle>
+            </DialogHeader>
 
-          {/* Quick actions row */}
-          <div className="flex flex-wrap gap-2">
-            <LabelPicker
-              projectId={projectId}
-              taskId={task.id}
-              taskLabels={task.labels ?? []}
-            />
-            <AssigneePicker
-              projectId={projectId}
-              assigneeId={assigneeId}
-              assignee={task.assignee}
-              onChange={setAssigneeId}
-            />
-          </div>
+            {/* 2-column layout */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-5">
 
-          <div className="space-y-1">
-            <Label style={{ color: 'var(--color-text)' }}>ชื่องาน</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              style={{
-                background: 'var(--color-card)',
-                borderColor: 'var(--color-border)',
-              }}
-            />
-          </div>
+              {/* LEFT — main content */}
+              <div className="space-y-4 min-w-0">
+                {/* Title */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                    ชื่องาน
+                  </Label>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="text-base font-medium"
+                    style={{
+                      background: 'var(--color-card)',
+                      borderColor: 'var(--color-border)',
+                    }}
+                  />
+                </div>
 
-          <div className="space-y-1">
-            <Label style={{ color: 'var(--color-text)' }}>รายละเอียด</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="รายละเอียดงาน..."
-              className="text-sm"
-            />
-          </div>
+                {/* Description — rich text editor */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                    รายละเอียด
+                  </Label>
+                  <RichTextEditor
+                    value={description}
+                    onChange={setDescription}
+                    placeholder="รายละเอียดงาน... ลากรูปภาพมาวางได้เลยค่ะ"
+                    minHeight="200px"
+                  />
+                </div>
 
-          <div className="space-y-1.5">
-            <Label style={{ color: 'var(--color-text)' }}>ความสำคัญ</Label>
-            <div className="flex gap-2">
-              {PRIORITIES.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setPriority(opt.value)}
-                  className="flex-1 py-1.5 text-xs rounded-lg border transition-all"
-                  style={{
-                    borderColor:
-                      priority === opt.value ? opt.color : 'var(--color-border)',
-                    background:
-                      priority === opt.value ? `${opt.color}25` : 'transparent',
-                    color:
-                      priority === opt.value ? opt.color : 'var(--color-muted-foreground)',
-                    fontWeight: priority === opt.value ? 600 : 400,
-                  }}
+                {/* Checklist */}
+                <div
+                  className="rounded-xl p-3"
+                  style={{ background: 'var(--color-card)', border: '1px solid var(--color-border-forest)' }}
                 >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+                  <ChecklistSection taskId={task.id} />
+                </div>
+              </div>
 
-          <div className="space-y-1">
-            <Label style={{ color: 'var(--color-text)' }}>กำหนดส่ง</Label>
-            <DatePicker
-              value={dueDate}
-              onChange={setDueDate}
-              placeholder="เลือกวันกำหนดส่ง"
-            />
-          </div>
+              {/* RIGHT — meta */}
+              <div className="space-y-4">
+                {/* Quick action pills */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
+                    มอบหมาย
+                  </p>
+                  <AssigneePicker
+                    projectId={projectId}
+                    assigneeId={assigneeId}
+                    assignee={task.assignee}
+                    onChange={setAssigneeId}
+                  />
+                </div>
 
-          {/* Cover color picker */}
-          <div className="space-y-1.5">
-            <Label style={{ color: 'var(--color-text)' }} className="flex items-center gap-1.5">
-              <PaletteIcon className="size-3.5" />
-              สีปกการ์ด
-            </Label>
-            <div className="flex gap-1.5 flex-wrap">
-              {COVER_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => { setCoverColor(coverColor === c ? null : c); setCoverImage(null) }}
-                  className="w-6 h-6 rounded-full border-2 transition-transform"
-                  style={{
-                    background: c,
-                    borderColor: coverColor === c ? 'var(--color-text)' : 'transparent',
-                    transform: coverColor === c ? 'scale(1.2)' : 'scale(1)',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
+                    Labels
+                  </p>
+                  <LabelPicker
+                    projectId={projectId}
+                    taskId={task.id}
+                    taskLabels={task.labels ?? []}
+                  />
+                </div>
 
-          {/* Cover image picker */}
-          {commentImages.length > 0 && (
-            <div className="space-y-2">
-              <Label style={{ color: 'var(--color-text)' }} className="flex items-center gap-1.5">
-                <ImageIcon className="size-3.5" />
-                ปกจากรูปในคอมเมนต์
-              </Label>
-              <div className="flex gap-2 flex-wrap">
-                {commentImages.map((c) => {
-                  const url = getFileUrl(c.imageUrl)
-                  if (!url) return null
-                  const isSelected = coverImage === c.imageUrl
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => { setCoverImage(isSelected ? null : c.imageUrl); setCoverColor(null) }}
-                      className="relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0"
-                      style={{
-                        borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
-                        transform: isSelected ? 'scale(1.05)' : 'scale(1)',
-                      }}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
+                    ความสำคัญ
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {PRIORITIES.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setPriority(opt.value)}
+                        className="py-1 text-xs rounded-lg border transition-all"
+                        style={{
+                          borderColor: priority === opt.value ? opt.color : 'var(--color-border)',
+                          background: priority === opt.value ? `${opt.color}25` : 'transparent',
+                          color: priority === opt.value ? opt.color : 'var(--color-muted-foreground)',
+                          fontWeight: priority === opt.value ? 600 : 400,
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
+                    กำหนดส่ง
+                  </p>
+                  <DatePicker
+                    value={dueDate}
+                    onChange={setDueDate}
+                    placeholder="เลือกวัน"
+                  />
+                </div>
+
+                {/* Cover color */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                    <PaletteIcon className="size-3" />
+                    สีปกการ์ด
+                  </p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {COVER_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => { setCoverColor(coverColor === c ? null : c); setCoverImage(null) }}
+                        className="w-6 h-6 rounded-full border-2 transition-transform"
+                        style={{
+                          background: c,
+                          borderColor: coverColor === c ? 'var(--color-text)' : 'transparent',
+                          transform: coverColor === c ? 'scale(1.2)' : 'scale(1)',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cover image from comments */}
+                {commentImages.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                      <ImageIcon className="size-3" />
+                      ปกจากคอมเมนต์
+                    </p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {commentImages.map((c) => {
+                        const url = getFileUrl(c.imageUrl)
+                        if (!url) return null
+                        const isSelected = coverImage === c.imageUrl
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => { setCoverImage(isSelected ? null : c.imageUrl); setCoverColor(null) }}
+                            className="relative w-14 h-14 rounded-lg overflow-hidden border-2 transition-all shrink-0"
+                            style={{
+                              borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                              transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                            }}
+                          >
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-[var(--color-primary)]/20 flex items-center justify-center">
+                                <span className="text-white text-[9px] font-bold bg-[var(--color-primary)] rounded-full w-4 h-4 flex items-center justify-center">✓</span>
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex flex-col gap-2 pt-2 border-t" style={{ borderColor: 'var(--color-border-forest)' }}>
+                  <Button
+                    onClick={handleSave}
+                    disabled={!isDirty || updateTask.isPending}
+                    className="w-full"
+                    style={{ background: 'var(--color-primary)', color: 'white' }}
+                  >
+                    {updateTask.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      className="flex-1 text-sm"
+                      onClick={onClose}
+                      style={{ color: 'var(--color-muted-foreground)' }}
                     >
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      {isSelected && (
-                        <div className="absolute inset-0 bg-[var(--color-primary)]/20 flex items-center justify-center">
-                          <div className="w-4 h-4 rounded-full bg-[var(--color-primary)] flex items-center justify-center">
-                            <span className="text-white text-[9px] font-bold">✓</span>
-                          </div>
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
+                      ปิด
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={handleDelete}
+                      disabled={deleteTask.isPending}
+                      className="text-red-500 hover:text-red-600 text-sm"
+                    >
+                      ลบ
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Checklist */}
-          <div
-            className="rounded-xl p-3"
-            style={{ background: 'var(--color-card)', border: '1px solid var(--color-border-forest)' }}
-          >
-            <ChecklistSection taskId={task.id} />
+            {/* Comments — full width below */}
+            <div className="mt-5 pt-5 border-t" style={{ borderColor: 'var(--color-border-forest)' }}>
+              <CommentSection taskId={task.id} />
+            </div>
           </div>
-
-          <div className="flex items-center gap-2 pt-1">
-            <Button
-              onClick={handleSave}
-              disabled={!isDirty || updateTask.isPending}
-              className="flex-1"
-              style={{ background: 'var(--color-primary)', color: 'white' }}
-            >
-              {updateTask.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              style={{ color: 'var(--color-muted-foreground)' }}
-            >
-              ปิด
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleDelete}
-              disabled={deleteTask.isPending}
-              className="text-red-500 hover:text-red-600"
-            >
-              ลบ
-            </Button>
-          </div>
-
-          <CommentSection taskId={task.id} />
         </div>
       </DialogContent>
     </Dialog>
