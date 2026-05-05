@@ -11,6 +11,7 @@ import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import type { Task, TaskPriority } from '../../api/tasks'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
+import CommentSection from './CommentSection'
 
 const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
   { value: 'low', label: 'ต่ำ', color: '#94A3B8' },
@@ -64,7 +65,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent
         style={{ background: 'var(--color-paper)' }}
-        className="max-w-md"
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
       >
         <DialogHeader>
           <DialogTitle style={{ color: 'var(--color-text)', fontFamily: 'var(--font-family-heading)' }}>
@@ -159,6 +160,8 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
               ลบ
             </Button>
           </div>
+
+          <CommentSection taskId={task.id} />
         </div>
       </DialogContent>
     </Dialog>

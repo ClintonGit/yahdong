@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY yahdong-api/package*.json ./yahdong-api/
 COPY yahdong-webapp/package*.json ./yahdong-webapp/
-RUN npm ci
+RUN rm -f package-lock.json && npm install
 
 COPY yahdong-api/prisma ./yahdong-api/prisma
 COPY yahdong-api/prisma.config.ts ./yahdong-api/
@@ -25,13 +25,15 @@ WORKDIR /app
 COPY package*.json ./
 COPY yahdong-api/package*.json ./yahdong-api/
 COPY yahdong-webapp/package*.json ./yahdong-webapp/
-RUN npm ci --omit=dev
+RUN rm -f package-lock.json && npm install --omit=dev
 
 COPY yahdong-api/prisma ./yahdong-api/prisma
 COPY yahdong-api/prisma.config.ts ./yahdong-api/
 RUN cd yahdong-api && npx prisma generate
 
 COPY --from=builder /app/yahdong-api/dist ./yahdong-api/dist
+
+RUN mkdir -p /app/yahdong-api/uploads && chown app:app /app/yahdong-api/uploads
 
 ENV PATH="/app/yahdong-api/node_modules/.bin:/app/node_modules/.bin:$PATH"
 USER app

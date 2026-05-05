@@ -4,6 +4,8 @@ services:
     env_file: .env
     restart: unless-stopped
     network_mode: host
+    volumes:
+      - uploads_data:/app/yahdong-api/uploads
 
   webapp:
     image: ghcr.io/clintongit/yahdong-webapp:latest
@@ -16,3 +18,6 @@ services:
 networks:
   internal:
     driver: bridge
+
+volumes:
+  uploads_data:
