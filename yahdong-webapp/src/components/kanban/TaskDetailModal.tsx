@@ -91,7 +91,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent
         style={{ background: 'var(--color-paper)' }}
-        className="max-w-4xl w-full max-h-[92vh] overflow-hidden p-0 flex flex-col"
+        className="!flex !flex-col w-full max-w-4xl sm:max-w-4xl max-h-[92vh] overflow-hidden p-0 gap-0"
       >
         {/* Cover */}
         {hasCover && (
@@ -125,7 +125,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
             </DialogHeader>
 
             {/* 2-column layout */}
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px] gap-5">
 
               {/* LEFT — main content */}
               <div className="space-y-4 min-w-0">

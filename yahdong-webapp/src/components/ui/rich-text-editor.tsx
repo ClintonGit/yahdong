@@ -154,7 +154,7 @@ export function RichTextEditor({
     >
       {/* Toolbar */}
       <div
-        className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b"
+        className="flex items-center gap-0.5 px-2 py-1.5 border-b overflow-x-auto"
         style={{ borderColor: 'var(--color-border-forest)', background: 'var(--color-paper)' }}
       >
         <ToolbarButton
