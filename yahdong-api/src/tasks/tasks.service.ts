@@ -9,6 +9,9 @@ import { MoveTaskDto } from './dto/move-task.dto'
 import { CreateStatusDto } from './dto/create-status.dto'
 import { UpdateStatusDto } from './dto/update-status.dto'
 import { ReorderStatusesDto } from './dto/reorder-statuses.dto'
+import { SetLabelsDto } from './dto/set-labels.dto'
+import { CreateChecklistItemDto } from './dto/create-checklist-item.dto'
+import { UpdateChecklistItemDto } from './dto/update-checklist-item.dto'
 
 @Injectable()
 export class TasksService {
@@ -23,6 +26,8 @@ export class TasksService {
       include: {
         assignee: { select: { id: true, name: true, avatar: true } },
         status: true,
+        labels: { include: { label: true } },
+        _count: { select: { checklistItems: true } },
       },
       orderBy: { order: 'asc' },
     })
@@ -37,7 +42,11 @@ export class TasksService {
 
     return this.prisma.task.create({
       data: { ...dto, projectId, createdBy: userId, order },
-      include: { assignee: { select: { id: true, name: true, avatar: true } }, status: true },
+      include: {
+        assignee: { select: { id: true, name: true, avatar: true } },
+        status: true,
+        labels: { include: { label: true } },
+      },
     })
   }
 
@@ -47,6 +56,8 @@ export class TasksService {
       include: {
         assignee: { select: { id: true, name: true, avatar: true } },
         status: true,
+        labels: { include: { label: true } },
+        checklistItems: { orderBy: { order: 'asc' } },
         _count: { select: { comments: true } },
       },
     })
@@ -65,6 +76,7 @@ export class TasksService {
       include: {
         assignee: { select: { id: true, name: true, email: true, avatar: true } },
         status: true,
+        labels: { include: { label: true } },
       },
     })
 
@@ -117,7 +129,7 @@ export class TasksService {
     })
   }
 
-  // Statuses
+  // ── Statuses ─────────────────────────────────────────────────────────────
   async findStatuses(projectId: string) {
     return this.prisma.taskStatus.findMany({
       where: { projectId },
@@ -150,5 +162,45 @@ export class TasksService {
         this.prisma.taskStatus.update({ where: { id }, data: { order: (i + 1) * 1000 } }),
       ),
     )
+  }
+
+  // ── Labels on task ───────────────────────────────────────────────────────
+  async setLabels(taskId: string, dto: SetLabelsDto) {
+    await this.prisma.taskLabel.deleteMany({ where: { taskId } })
+    if (dto.labelIds.length > 0) {
+      await this.prisma.taskLabel.createMany({
+        data: dto.labelIds.map((labelId) => ({ taskId, labelId })),
+        skipDuplicates: true,
+      })
+    }
+    return this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { labels: { include: { label: true } } },
+    })
+  }
+
+  // ── Checklist ─────────────────────────────────────────────────────────────
+  async getChecklist(taskId: string) {
+    return this.prisma.checklistItem.findMany({
+      where: { taskId },
+      orderBy: { order: 'asc' },
+    })
+  }
+
+  async addChecklistItem(taskId: string, dto: CreateChecklistItemDto) {
+    const last = await this.prisma.checklistItem.findFirst({
+      where: { taskId }, orderBy: { order: 'desc' },
+    })
+    return this.prisma.checklistItem.create({
+      data: { taskId, text: dto.text, order: (last?.order ?? 0) + 1000 },
+    })
+  }
+
+  async updateChecklistItem(itemId: string, dto: UpdateChecklistItemDto) {
+    return this.prisma.checklistItem.update({ where: { id: itemId }, data: dto })
+  }
+
+  async removeChecklistItem(itemId: string) {
+    await this.prisma.checklistItem.delete({ where: { id: itemId } })
   }
 }

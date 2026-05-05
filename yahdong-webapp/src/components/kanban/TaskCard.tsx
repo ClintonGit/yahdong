@@ -43,6 +43,7 @@ export default function TaskCard({ task, onClick }: Props) {
   const isOverdue = task.dueDate != null && new Date(task.dueDate) < new Date()
   const prioColor = PRIORITY_COLOR[task.priority] ?? '#94A3B8'
   const coverUrl = getFileUrl(task.coverImage)
+  const hasCover = coverUrl || task.coverColor
 
   return (
     <div
@@ -60,19 +61,42 @@ export default function TaskCard({ task, onClick }: Props) {
       className="rounded-xl border cursor-grab active:cursor-grabbing
                  select-none hover:shadow-sm transition-shadow relative overflow-hidden"
     >
-      {/* Cover image */}
-      {coverUrl && (
-        <div className="w-full h-[100px] overflow-hidden">
-          <img
-            src={coverUrl}
-            alt=""
-            className="w-full h-full object-cover"
-            draggable={false}
-          />
+      {/* Cover: image or color */}
+      {hasCover && (
+        <div className="w-full h-[90px] overflow-hidden">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+          ) : (
+            <div className="w-full h-full" style={{ background: task.coverColor ?? undefined }} />
+          )}
         </div>
       )}
 
       <div className="p-3">
+        {/* Label chips */}
+        {task.labels && task.labels.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            {task.labels.map((tl) => (
+              <span
+                key={tl.labelId}
+                className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                style={{
+                  background: `${tl.label.color}25`,
+                  color: tl.label.color,
+                  border: `1px solid ${tl.label.color}40`,
+                }}
+              >
+                {tl.label.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-start gap-2">
           <span
             className="mt-1.5 w-2 h-2 rounded-full shrink-0"
@@ -85,6 +109,24 @@ export default function TaskCard({ task, onClick }: Props) {
             {task.title}
           </p>
         </div>
+
+        {/* Checklist progress mini */}
+        {task._count && task._count.checklistItems > 0 && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--color-border-forest)' }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: '0%',
+                  background: 'var(--color-primary)',
+                }}
+              />
+            </div>
+            <span className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>
+              0/{task._count.checklistItems}
+            </span>
+          </div>
+        )}
 
         {(task.assignee || task.dueDate) && (
           <div

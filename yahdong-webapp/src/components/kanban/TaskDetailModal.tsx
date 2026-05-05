@@ -10,18 +10,26 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import { DatePicker } from '../ui/date-picker'
+import { PaletteIcon, XIcon, ImageIcon } from 'lucide-react'
 import type { Task, TaskPriority } from '../../api/tasks'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
 import { useComments } from '../../hooks/useComments'
 import { getFileUrl } from '../../lib/utils'
 import CommentSection from './CommentSection'
-import { ImageIcon, XIcon } from 'lucide-react'
+import LabelPicker from './LabelPicker'
+import ChecklistSection from './ChecklistSection'
+import AssigneePicker from './AssigneePicker'
 
 const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
   { value: 'low', label: 'ต่ำ', color: '#94A3B8' },
   { value: 'medium', label: 'กลาง', color: '#F59E0B' },
   { value: 'high', label: 'สูง', color: '#EF4444' },
   { value: 'urgent', label: 'ด่วน', color: '#DC2626' },
+]
+
+const COVER_COLORS = [
+  '#E8A030', '#4A7C5E', '#C8956A', '#B8D4C0', '#F5EDE0',
+  '#DDBEA9', '#89B4A0', '#E8C49A', '#7FA685', '#D4956A',
 ]
 
 interface Props {
@@ -38,6 +46,8 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
     task.dueDate ? task.dueDate.split('T')[0] : '',
   )
   const [coverImage, setCoverImage] = useState<string | null | undefined>(task.coverImage)
+  const [coverColor, setCoverColor] = useState<string | null | undefined>(task.coverColor)
+  const [assigneeId, setAssigneeId] = useState<string | null | undefined>(task.assigneeId)
 
   const updateTask = useUpdateTask(projectId)
   const deleteTask = useDeleteTask(projectId)
@@ -50,7 +60,9 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
     description !== (task.description ?? '') ||
     priority !== task.priority ||
     dueDate !== (task.dueDate ? task.dueDate.split('T')[0] : '') ||
-    coverImage !== task.coverImage
+    coverImage !== task.coverImage ||
+    coverColor !== task.coverColor ||
+    assigneeId !== task.assigneeId
 
   const handleSave = async () => {
     if (!title.trim()) return
@@ -61,6 +73,8 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
       priority,
       dueDate: dueDate || null,
       coverImage: coverImage ?? null,
+      coverColor: coverColor ?? null,
+      assigneeId: assigneeId ?? null,
     })
     onClose()
   }
@@ -71,36 +85,57 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
     onClose()
   }
 
+  const hasCover = coverImage || coverColor
+
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent
         style={{ background: 'var(--color-paper)' }}
-        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        className="max-w-xl max-h-[90vh] overflow-y-auto p-0"
       >
-        <DialogHeader>
-          <DialogTitle style={{ color: 'var(--color-text)', fontFamily: 'var(--font-family-heading)' }}>
-            รายละเอียดงาน
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 mt-1">
-          {/* Cover image preview */}
-          {coverImage && (
-            <div className="relative rounded-xl overflow-hidden h-36 group">
+        {/* Cover section */}
+        {hasCover && (
+          <div className="relative h-36 w-full overflow-hidden rounded-t-xl">
+            {coverImage ? (
               <img
                 src={getFileUrl(coverImage) ?? ''}
                 alt="cover"
                 className="w-full h-full object-cover"
               />
-              <button
-                type="button"
-                onClick={() => setCoverImage(null)}
-                className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <XIcon className="size-3.5" />
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="w-full h-full" style={{ background: coverColor ?? undefined }} />
+            )}
+            <button
+              type="button"
+              onClick={() => { setCoverImage(null); setCoverColor(null) }}
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1"
+            >
+              <XIcon className="size-3.5" />
+            </button>
+          </div>
+        )}
+
+        <div className="px-5 pt-4 pb-5 space-y-4">
+          <DialogHeader>
+            <DialogTitle style={{ color: 'var(--color-text)', fontFamily: 'var(--font-family-heading)' }}>
+              รายละเอียดงาน
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Quick actions row */}
+          <div className="flex flex-wrap gap-2">
+            <LabelPicker
+              projectId={projectId}
+              taskId={task.id}
+              taskLabels={task.labels ?? []}
+            />
+            <AssigneePicker
+              projectId={projectId}
+              assigneeId={assigneeId}
+              assignee={task.assignee}
+              onChange={setAssigneeId}
+            />
+          </div>
 
           <div className="space-y-1">
             <Label style={{ color: 'var(--color-text)' }}>ชื่องาน</Label>
@@ -159,12 +194,35 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
             />
           </div>
 
+          {/* Cover color picker */}
+          <div className="space-y-1.5">
+            <Label style={{ color: 'var(--color-text)' }} className="flex items-center gap-1.5">
+              <PaletteIcon className="size-3.5" />
+              สีปกการ์ด
+            </Label>
+            <div className="flex gap-1.5 flex-wrap">
+              {COVER_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => { setCoverColor(coverColor === c ? null : c); setCoverImage(null) }}
+                  className="w-6 h-6 rounded-full border-2 transition-transform"
+                  style={{
+                    background: c,
+                    borderColor: coverColor === c ? 'var(--color-text)' : 'transparent',
+                    transform: coverColor === c ? 'scale(1.2)' : 'scale(1)',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
           {/* Cover image picker */}
           {commentImages.length > 0 && (
             <div className="space-y-2">
               <Label style={{ color: 'var(--color-text)' }} className="flex items-center gap-1.5">
                 <ImageIcon className="size-3.5" />
-                ปกการ์ด
+                ปกจากรูปในคอมเมนต์
               </Label>
               <div className="flex gap-2 flex-wrap">
                 {commentImages.map((c) => {
@@ -175,7 +233,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
                     <button
                       key={c.id}
                       type="button"
-                      onClick={() => setCoverImage(isSelected ? null : c.imageUrl)}
+                      onClick={() => { setCoverImage(isSelected ? null : c.imageUrl); setCoverColor(null) }}
                       className="relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0"
                       style={{
                         borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
@@ -194,11 +252,16 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
                   )
                 })}
               </div>
-              <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-                คลิกรูปในคอมเมนต์เพื่อตั้งเป็นปกการ์ด
-              </p>
             </div>
           )}
+
+          {/* Checklist */}
+          <div
+            className="rounded-xl p-3"
+            style={{ background: 'var(--color-card)', border: '1px solid var(--color-border-forest)' }}
+          >
+            <ChecklistSection taskId={task.id} />
+          </div>
 
           <div className="flex items-center gap-2 pt-1">
             <Button

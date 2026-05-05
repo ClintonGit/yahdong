@@ -16,6 +16,28 @@ export interface TaskUser {
   avatar?: string | null
 }
 
+export interface Label {
+  id: string
+  projectId: string
+  name: string
+  color: string
+}
+
+export interface TaskLabel {
+  taskId: string
+  labelId: string
+  label: Label
+}
+
+export interface ChecklistItem {
+  id: string
+  taskId: string
+  text: string
+  checked: boolean
+  order: number
+  createdAt: string
+}
+
 export interface Task {
   id: string
   projectId: string
@@ -26,10 +48,15 @@ export interface Task {
   assigneeId?: string | null
   dueDate?: string | null
   coverImage?: string | null
+  coverColor?: string | null
   order: number
   createdBy: string
   createdAt: string
   assignee?: TaskUser | null
+  status?: TaskStatus
+  labels?: TaskLabel[]
+  checklistItems?: ChecklistItem[]
+  _count?: { checklistItems: number }
 }
 
 export interface CreateTaskInput {
@@ -45,9 +72,10 @@ export interface UpdateTaskInput {
   title?: string
   description?: string
   priority?: TaskPriority
-  assigneeId?: string
+  assigneeId?: string | null
   dueDate?: string | null
   coverImage?: string | null
+  coverColor?: string | null
   statusId?: string
 }
 
@@ -73,4 +101,16 @@ export const taskApi = {
   delete: (taskId: string) => api.delete(`/tasks/${taskId}`),
   move: (taskId: string, data: { statusId: string; order: number }) =>
     api.patch<Task>(`/tasks/${taskId}/move`, data),
+  setLabels: (taskId: string, labelIds: string[]) =>
+    api.patch(`/tasks/${taskId}/labels`, { labelIds }),
+}
+
+export const checklistApi = {
+  list: (taskId: string) =>
+    api.get<ChecklistItem[]>(`/tasks/${taskId}/checklist`),
+  create: (taskId: string, text: string) =>
+    api.post<ChecklistItem>(`/tasks/${taskId}/checklist`, { text }),
+  update: (itemId: string, data: { text?: string; checked?: boolean }) =>
+    api.patch<ChecklistItem>(`/checklist/${itemId}`, data),
+  delete: (itemId: string) => api.delete(`/checklist/${itemId}`),
 }

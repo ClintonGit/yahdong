@@ -7,6 +7,8 @@ import { CreateProjectDto } from './dto/create-project.dto'
 import { UpdateProjectDto } from './dto/update-project.dto'
 import { InviteMemberDto } from './dto/invite-member.dto'
 import { UpdateMemberDto } from './dto/update-member.dto'
+import { CreateLabelDto } from './dto/create-label.dto'
+import { UpdateLabelDto } from './dto/update-label.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { ProjectGuard } from '../common/guards/project.guard'
 import { Roles } from '../common/decorators/roles.decorator'
@@ -48,6 +50,13 @@ export class ProjectsController {
     return this.projects.remove(id)
   }
 
+  // ── Members ──────────────────────────────────────────────────────────────
+  @Get(':id/members')
+  @UseGuards(ProjectGuard)
+  getMembers(@Param('id') id: string) {
+    return this.projects.getMembers(id)
+  }
+
   @Post(':id/members')
   @UseGuards(ProjectGuard)
   @Roles('owner')
@@ -77,5 +86,52 @@ export class ProjectsController {
   @Roles('owner')
   removeMember(@Param('id') id: string, @Param('userId') userId: string) {
     return this.projects.removeMember(id, userId)
+  }
+
+  // ── Star ─────────────────────────────────────────────────────────────────
+  @Patch(':id/star')
+  @UseGuards(ProjectGuard)
+  toggleStar(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.projects.toggleStar(id, user.sub)
+  }
+
+  // ── Invite link ──────────────────────────────────────────────────────────
+  @Post(':id/invite-link')
+  @UseGuards(ProjectGuard)
+  @Roles('owner')
+  generateInviteLink(@Param('id') id: string) {
+    return this.projects.generateInviteLink(id)
+  }
+
+  // ── Public share ─────────────────────────────────────────────────────────
+  @Patch(':id/share')
+  @UseGuards(ProjectGuard)
+  @Roles('owner')
+  toggleShare(@Param('id') id: string) {
+    return this.projects.toggleShare(id)
+  }
+
+  // ── Labels ───────────────────────────────────────────────────────────────
+  @Get(':id/labels')
+  @UseGuards(ProjectGuard)
+  getLabels(@Param('id') id: string) {
+    return this.projects.getLabels(id)
+  }
+
+  @Post(':id/labels')
+  @UseGuards(ProjectGuard)
+  createLabel(@Param('id') id: string, @Body() dto: CreateLabelDto) {
+    return this.projects.createLabel(id, dto)
+  }
+
+  @Patch('labels/:labelId')
+  updateLabel(@Param('labelId') labelId: string, @Body() dto: UpdateLabelDto) {
+    return this.projects.updateLabel(labelId, dto)
+  }
+
+  @Delete('labels/:labelId')
+  @HttpCode(204)
+  removeLabel(@Param('labelId') labelId: string) {
+    return this.projects.removeLabel(labelId)
   }
 }

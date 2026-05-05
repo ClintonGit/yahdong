@@ -8,4 +8,5 @@ export class UpdateTaskDto {
   @IsOptional() @IsString() assigneeId?: string
   @IsOptional() dueDate?: Date | null
   @IsOptional() @IsString() coverImage?: string | null
+  @IsOptional() @IsString() coverColor?: string | null
 }

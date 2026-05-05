@@ -9,6 +9,9 @@ import { MoveTaskDto } from './dto/move-task.dto'
 import { CreateStatusDto } from './dto/create-status.dto'
 import { UpdateStatusDto } from './dto/update-status.dto'
 import { ReorderStatusesDto } from './dto/reorder-statuses.dto'
+import { SetLabelsDto } from './dto/set-labels.dto'
+import { CreateChecklistItemDto } from './dto/create-checklist-item.dto'
+import { UpdateChecklistItemDto } from './dto/update-checklist-item.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { ProjectGuard } from '../common/guards/project.guard'
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator'
@@ -57,6 +60,7 @@ export class TasksController {
     return this.tasks.move(id, dto)
   }
 
+  // ── Statuses ─────────────────────────────────────────────────────────────
   @Get('projects/:id/statuses')
   findStatuses(@Param('id') projectId: string) {
     return this.tasks.findStatuses(projectId)
@@ -81,5 +85,33 @@ export class TasksController {
   @Patch('projects/:id/statuses/reorder')
   reorderStatuses(@Param('id') projectId: string, @Body() dto: ReorderStatusesDto) {
     return this.tasks.reorderStatuses(projectId, dto)
+  }
+
+  // ── Labels on task ────────────────────────────────────────────────────────
+  @Patch('tasks/:taskId/labels')
+  setLabels(@Param('taskId') id: string, @Body() dto: SetLabelsDto) {
+    return this.tasks.setLabels(id, dto)
+  }
+
+  // ── Checklist ─────────────────────────────────────────────────────────────
+  @Get('tasks/:taskId/checklist')
+  getChecklist(@Param('taskId') id: string) {
+    return this.tasks.getChecklist(id)
+  }
+
+  @Post('tasks/:taskId/checklist')
+  addChecklistItem(@Param('taskId') id: string, @Body() dto: CreateChecklistItemDto) {
+    return this.tasks.addChecklistItem(id, dto)
+  }
+
+  @Patch('checklist/:itemId')
+  updateChecklistItem(@Param('itemId') id: string, @Body() dto: UpdateChecklistItemDto) {
+    return this.tasks.updateChecklistItem(id, dto)
+  }
+
+  @Delete('checklist/:itemId')
+  @HttpCode(204)
+  removeChecklistItem(@Param('itemId') id: string) {
+    return this.tasks.removeChecklistItem(id)
   }
 }

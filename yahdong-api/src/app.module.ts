@@ -8,6 +8,7 @@ import { TasksModule } from './tasks/tasks.module'
 import { EmailModule } from './email/email.module'
 import { CommentsModule } from './comments/comments.module'
 import { UploadsModule } from './uploads/uploads.module'
+import { PublicModule } from './public/public.module'
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UploadsModule } from './uploads/uploads.module'
     EmailModule,
     CommentsModule,
     UploadsModule,
+    PublicModule,
   ],
 })
 export class AppModule {}

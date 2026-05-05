@@ -1,12 +1,15 @@
 import {
   Injectable, NotFoundException, ConflictException, BadRequestException,
 } from '@nestjs/common'
+import { randomBytes } from 'crypto'
 import { PrismaService } from '../prisma/prisma.service'
 import { EmailService } from '../email/email.service'
 import { CreateProjectDto } from './dto/create-project.dto'
 import { UpdateProjectDto } from './dto/update-project.dto'
 import { InviteMemberDto } from './dto/invite-member.dto'
 import { UpdateMemberDto } from './dto/update-member.dto'
+import { CreateLabelDto } from './dto/create-label.dto'
+import { UpdateLabelDto } from './dto/update-label.dto'
 
 const DEFAULT_STATUSES = [
   { name: 'Backlog', color: '#94A3B8', order: 1000 },
@@ -30,13 +33,12 @@ export class ProjectsService {
         },
       },
     })
-    return memberships.map((m) => ({ ...m.project, myRole: m.role }))
+    return memberships.map((m) => ({ ...m.project, myRole: m.role, starred: m.starred }))
   }
 
   async create(userId: string, dto: CreateProjectDto) {
     const slug = dto.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 
-    // need orgId — create personal org per user if none
     let org = await this.prisma.organization.findFirst({
       where: { members: { some: { userId, role: 'owner' } } },
     })
@@ -141,5 +143,128 @@ export class ProjectsService {
     await this.prisma.projectMember.delete({
       where: { projectId_userId: { projectId, userId } },
     })
+  }
+
+  // ── Members list (for assignee picker) ──────────────────────────────────
+  async getMembers(projectId: string) {
+    const members = await this.prisma.projectMember.findMany({
+      where: { projectId },
+      include: { user: { select: { id: true, name: true, avatar: true, email: true } } },
+    })
+    return members.map((m) => ({ ...m.user, role: m.role }))
+  }
+
+  // ── Star / Unstar ────────────────────────────────────────────────────────
+  async toggleStar(projectId: string, userId: string) {
+    const member = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId, userId } },
+    })
+    if (!member) throw new NotFoundException()
+    return this.prisma.projectMember.update({
+      where: { projectId_userId: { projectId, userId } },
+      data: { starred: !member.starred },
+      select: { starred: true },
+    })
+  }
+
+  // ── Invite link ──────────────────────────────────────────────────────────
+  async generateInviteLink(projectId: string) {
+    const token = randomBytes(24).toString('hex')
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    const invite = await this.prisma.projectInvite.create({
+      data: { projectId, token, expiresAt },
+    })
+    return { token: invite.token, expiresAt: invite.expiresAt }
+  }
+
+  async getInvite(token: string) {
+    const invite = await this.prisma.projectInvite.findUnique({
+      where: { token },
+      include: { project: { select: { id: true, name: true, color: true } } },
+    })
+    if (!invite) throw new NotFoundException('Invite not found')
+    if (invite.expiresAt < new Date()) throw new BadRequestException('Invite expired')
+    if (invite.usedAt) throw new BadRequestException('Invite already used')
+    return invite
+  }
+
+  async acceptInvite(token: string, userId: string) {
+    const invite = await this.getInvite(token)
+
+    const exists = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: invite.projectId, userId } },
+    })
+    if (exists) throw new ConflictException('Already a member')
+
+    const [member] = await this.prisma.$transaction([
+      this.prisma.projectMember.create({
+        data: { projectId: invite.projectId, userId, role: invite.role },
+      }),
+      this.prisma.projectInvite.update({
+        where: { token },
+        data: { usedAt: new Date() },
+      }),
+    ])
+    return { projectId: invite.projectId, role: member.role }
+  }
+
+  // ── Public share ─────────────────────────────────────────────────────────
+  async toggleShare(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { isPublic: true, shareToken: true },
+    })
+    if (!project) throw new NotFoundException()
+
+    if (!project.isPublic) {
+      const shareToken = project.shareToken ?? randomBytes(16).toString('hex')
+      return this.prisma.project.update({
+        where: { id: projectId },
+        data: { isPublic: true, shareToken },
+        select: { isPublic: true, shareToken: true },
+      })
+    } else {
+      return this.prisma.project.update({
+        where: { id: projectId },
+        data: { isPublic: false },
+        select: { isPublic: true, shareToken: true },
+      })
+    }
+  }
+
+  async getPublicBoard(shareToken: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { shareToken },
+      include: {
+        statuses: { orderBy: { order: 'asc' } },
+        tasks: {
+          include: {
+            assignee: { select: { id: true, name: true, avatar: true } },
+            status: true,
+            labels: { include: { label: true } },
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+    if (!project || !project.isPublic) throw new NotFoundException()
+    return project
+  }
+
+  // ── Labels ───────────────────────────────────────────────────────────────
+  async getLabels(projectId: string) {
+    return this.prisma.label.findMany({ where: { projectId }, orderBy: { name: 'asc' } })
+  }
+
+  async createLabel(projectId: string, dto: CreateLabelDto) {
+    return this.prisma.label.create({ data: { ...dto, projectId } })
+  }
+
+  async updateLabel(labelId: string, dto: UpdateLabelDto) {
+    return this.prisma.label.update({ where: { id: labelId }, data: dto })
+  }
+
+  async removeLabel(labelId: string) {
+    await this.prisma.label.delete({ where: { id: labelId } })
   }
 }
