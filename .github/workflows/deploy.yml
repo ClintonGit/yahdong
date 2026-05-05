@@ -8,42 +8,44 @@ on:
 jobs:
   build-and-push:
     name: Build & Push Images
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          if [ -d .git ]; then
+            git fetch origin
+            git reset --hard ${{ github.sha }}
+            git clean -fdx
+          else
+            git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git .
+          fi
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build & push API image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: yahdong-api/Dockerfile
-          push: true
-          no-cache: true
-          tags: |
-            ghcr.io/clintongit/yahdong-api:${{ github.sha }}
-            ghcr.io/clintongit/yahdong-api:latest
+        run: |
+          docker build --no-cache \
+            -f yahdong-api/Dockerfile \
+            -t ghcr.io/clintongit/yahdong-api:${{ github.sha }} \
+            -t ghcr.io/clintongit/yahdong-api:latest \
+            .
+          docker push ghcr.io/clintongit/yahdong-api:${{ github.sha }}
+          docker push ghcr.io/clintongit/yahdong-api:latest
 
       - name: Build & push webapp image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: yahdong-webapp/Dockerfile
-          push: true
-          no-cache: true
-          build-args: VITE_API_URL=https://yahdong-api.commsk.dev
-          tags: |
-            ghcr.io/clintongit/yahdong-webapp:${{ github.sha }}
-            ghcr.io/clintongit/yahdong-webapp:latest
+        run: |
+          docker build --no-cache \
+            --build-arg VITE_API_URL=https://yahdong-api.commsk.dev \
+            -f yahdong-webapp/Dockerfile \
+            -t ghcr.io/clintongit/yahdong-webapp:${{ github.sha }} \
+            -t ghcr.io/clintongit/yahdong-webapp:latest \
+            .
+          docker push ghcr.io/clintongit/yahdong-webapp:${{ github.sha }}
+          docker push ghcr.io/clintongit/yahdong-webapp:latest
 
   deploy:
     name: Deploy

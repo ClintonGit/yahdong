@@ -9,13 +9,17 @@ on:
 jobs:
   build:
     name: Build Check
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - name: Checkout
+        run: |
+          if [ -d .git ]; then
+            git fetch origin
+            git reset --hard ${{ github.sha }}
+            git clean -fdx
+          else
+            git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git .
+          fi
 
       - name: Install deps (no lockfile — mirrors Dockerfile for cross-platform optional deps)
         run: rm -f package-lock.json && npm install
@@ -25,7 +29,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost/ci
 
-      - run: npm run build:api
+      - name: Build API
+        run: npm run build:api
 
       - name: Build webapp
         run: npm run build:web
