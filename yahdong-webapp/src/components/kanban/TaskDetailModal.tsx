@@ -12,7 +12,10 @@ import { Textarea } from '../ui/textarea'
 import { DatePicker } from '../ui/date-picker'
 import type { Task, TaskPriority } from '../../api/tasks'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
+import { useComments } from '../../hooks/useComments'
+import { getFileUrl } from '../../lib/utils'
 import CommentSection from './CommentSection'
+import { ImageIcon, XIcon } from 'lucide-react'
 
 const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
   { value: 'low', label: 'ต่ำ', color: '#94A3B8' },
@@ -34,15 +37,20 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
   const [dueDate, setDueDate] = useState(
     task.dueDate ? task.dueDate.split('T')[0] : '',
   )
+  const [coverImage, setCoverImage] = useState<string | null | undefined>(task.coverImage)
 
   const updateTask = useUpdateTask(projectId)
   const deleteTask = useDeleteTask(projectId)
+  const { data: comments } = useComments(task.id)
+
+  const commentImages = (comments ?? []).filter((c) => c.imageUrl)
 
   const isDirty =
     title !== task.title ||
     description !== (task.description ?? '') ||
     priority !== task.priority ||
-    dueDate !== (task.dueDate ? task.dueDate.split('T')[0] : '')
+    dueDate !== (task.dueDate ? task.dueDate.split('T')[0] : '') ||
+    coverImage !== task.coverImage
 
   const handleSave = async () => {
     if (!title.trim()) return
@@ -52,6 +60,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
       description: description.trim() || undefined,
       priority,
       dueDate: dueDate || null,
+      coverImage: coverImage ?? null,
     })
     onClose()
   }
@@ -75,6 +84,24 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
         </DialogHeader>
 
         <div className="space-y-4 mt-1">
+          {/* Cover image preview */}
+          {coverImage && (
+            <div className="relative rounded-xl overflow-hidden h-36 group">
+              <img
+                src={getFileUrl(coverImage) ?? ''}
+                alt="cover"
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => setCoverImage(null)}
+                className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            </div>
+          )}
+
           <div className="space-y-1">
             <Label style={{ color: 'var(--color-text)' }}>ชื่องาน</Label>
             <Input
@@ -131,6 +158,47 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
               placeholder="เลือกวันกำหนดส่ง"
             />
           </div>
+
+          {/* Cover image picker */}
+          {commentImages.length > 0 && (
+            <div className="space-y-2">
+              <Label style={{ color: 'var(--color-text)' }} className="flex items-center gap-1.5">
+                <ImageIcon className="size-3.5" />
+                ปกการ์ด
+              </Label>
+              <div className="flex gap-2 flex-wrap">
+                {commentImages.map((c) => {
+                  const url = getFileUrl(c.imageUrl)
+                  if (!url) return null
+                  const isSelected = coverImage === c.imageUrl
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCoverImage(isSelected ? null : c.imageUrl)}
+                      className="relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0"
+                      style={{
+                        borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                        transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                      }}
+                    >
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-[var(--color-primary)]/20 flex items-center justify-center">
+                          <div className="w-4 h-4 rounded-full bg-[var(--color-primary)] flex items-center justify-center">
+                            <span className="text-white text-[9px] font-bold">✓</span>
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                คลิกรูปในคอมเมนต์เพื่อตั้งเป็นปกการ์ด
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 pt-1">
             <Button

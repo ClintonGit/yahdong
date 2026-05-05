@@ -29,6 +29,8 @@ import TaskDetailModal from './TaskDetailModal'
 import GlitterEffect from './GlitterEffect'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
+import { dongToast } from '../../lib/dongToast'
+import dong06 from '../../assets/dong/dong-sticker-06-กลับบ้าน.png'
 
 const COLUMN_COLORS = [
   '#E8A030', '#4A7C5E', '#C8956A', '#8B6343',
@@ -174,6 +176,16 @@ export default function KanbanBoard({ projectId }: Props) {
 
     if (!targetColId) return
 
+    // 🐾 Dong-03: toast เมื่อ drop ลง column ที่ชื่อ "done"/"เสร็จ"
+    if (originColId && targetColId !== originColId) {
+      const targetCol = localColumns.find((c) => c.id === targetColId)
+      const colName = targetCol?.name.toLowerCase() ?? ''
+      if (colName.includes('done') || colName.includes('เสร็จ') || colName.includes('สำเร็จ')) {
+        const task = localColumns.flatMap((c) => c.tasks).find((t) => t.id === activeId)
+        if (task) dongToast.done(task.title)
+      }
+    }
+
     // 🎉 Glitter เมื่อลากข้ามคอลัมน์
     if (originColId && targetColId !== originColId) {
       const rect = active.rect.current.translated
@@ -249,8 +261,20 @@ export default function KanbanBoard({ projectId }: Props) {
     )
   }
 
+  const totalTasks = localColumns.reduce((s, c) => s + c.tasks.length, 0)
+  const hasColumns = localColumns.length > 0
+
   return (
-    <>
+    <div className="relative h-full">
+      {hasColumns && totalTasks === 0 && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none z-10">
+          <img src={dong06} alt="กลับบ้านได้แล้ว" className="h-32 w-32 object-contain drop-shadow-md" />
+          <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-family-heading)', color: 'var(--color-text)' }}>
+            กลับบ้านได้แล้ว! 🏡
+          </p>
+          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>ทุกงานเสร็จหมดแล้วค่ะ</p>
+        </div>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -381,6 +405,6 @@ export default function KanbanBoard({ projectId }: Props) {
           onDone={() => setGlitterPos(null)}
         />
       )}
-    </>
+    </div>
   )
 }

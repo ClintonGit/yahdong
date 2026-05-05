@@ -8,6 +8,7 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { useCreateProject } from '../hooks/useProjects'
+import { dongToast } from '../lib/dongToast'
 
 const COLORS = [
   '#E8A030',
@@ -47,6 +48,7 @@ export default function CreateProjectModal({ open, onClose }: Props) {
 
   const onSubmit = async (data: FormData) => {
     const project = await createProject.mutateAsync({ ...data, color })
+    dongToast.newProject(data.name)
     reset()
     onClose()
     navigate(`/projects/${project.id}`)

@@ -25,6 +25,7 @@ export interface Task {
   priority: TaskPriority
   assigneeId?: string | null
   dueDate?: string | null
+  coverImage?: string | null
   order: number
   createdBy: string
   createdAt: string
@@ -46,6 +47,7 @@ export interface UpdateTaskInput {
   priority?: TaskPriority
   assigneeId?: string
   dueDate?: string | null
+  coverImage?: string | null
   statusId?: string
 }
 

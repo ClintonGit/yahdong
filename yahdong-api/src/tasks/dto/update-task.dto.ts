@@ -7,4 +7,5 @@ export class UpdateTaskDto {
   @IsOptional() @IsEnum(TaskPriority) priority?: TaskPriority
   @IsOptional() @IsString() assigneeId?: string
   @IsOptional() dueDate?: Date | null
+  @IsOptional() @IsString() coverImage?: string | null
 }

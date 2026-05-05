@@ -113,6 +113,7 @@ model Task {
   assigneeId  String?
   sprintId    String?
   dueDate     DateTime?
+  coverImage  String?
   order       Float
   createdBy   String
   createdAt   DateTime     @default(now())
