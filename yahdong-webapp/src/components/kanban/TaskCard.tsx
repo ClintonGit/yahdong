@@ -15,9 +15,10 @@ const PRIORITY_COLOR: Record<string, string> = {
 interface Props {
   task: Task
   onClick: () => void
+  onContextMenu: (e: React.MouseEvent, task: Task) => void
 }
 
-export default function TaskCard({ task, onClick }: Props) {
+export default function TaskCard({ task, onClick, onContextMenu }: Props) {
   const {
     setNodeRef,
     attributes,
@@ -58,6 +59,7 @@ export default function TaskCard({ task, onClick }: Props) {
       {...attributes}
       {...listeners}
       onClick={handleClick}
+      onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, task) }}
       className="rounded-xl border cursor-grab active:cursor-grabbing
                  select-none hover:shadow-sm transition-shadow relative overflow-hidden"
     >

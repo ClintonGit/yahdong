@@ -26,11 +26,14 @@ import {
 } from '../../hooks/useBoard'
 import KanbanColumn from './KanbanColumn'
 import TaskDetailModal from './TaskDetailModal'
+import CardContextMenu from './CardContextMenu'
 import GlitterEffect from './GlitterEffect'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { dongToast } from '../../lib/dongToast'
 import dong06 from '../../assets/dong/dong-sticker-06-กลับบ้าน.png'
+import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
+import type { TaskPriority } from '../../api/tasks'
 
 const COLUMN_COLORS = [
   '#E8A030', '#4A7C5E', '#C8956A', '#8B6343',
@@ -47,6 +50,7 @@ export default function KanbanBoard({ projectId }: Props) {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [activeColumn, setActiveColumn] = useState<TaskStatus | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ task: Task; x: number; y: number } | null>(null)
   const [showAddCol, setShowAddCol] = useState(false)
   const [newColName, setNewColName] = useState('')
   const [glitterPos, setGlitterPos] = useState<{ x: number; y: number } | null>(null)
@@ -56,6 +60,8 @@ export default function KanbanBoard({ projectId }: Props) {
 
   const moveTask = useMoveTask(projectId)
   const createTask = useCreateTask(projectId)
+  const updateTask = useUpdateTask(projectId)
+  const deleteTask = useDeleteTask(projectId)
   const reorderStatuses = useReorderStatuses(projectId)
   const createStatus = useCreateStatus(projectId)
 
@@ -226,6 +232,34 @@ export default function KanbanBoard({ projectId }: Props) {
     createTask.mutate({ title, statusId })
   }
 
+  const handleContextMenu = (e: React.MouseEvent, task: Task) => {
+    e.preventDefault()
+    setContextMenu({ task, x: e.clientX, y: e.clientY })
+  }
+
+  const handleContextAssign = (userId: string | null) => {
+    if (!contextMenu) return
+    updateTask.mutate({ taskId: contextMenu.task.id, assigneeId: userId })
+  }
+
+  const handleContextPriority = (priority: TaskPriority) => {
+    if (!contextMenu) return
+    updateTask.mutate({ taskId: contextMenu.task.id, priority })
+  }
+
+  const handleContextMoveTo = (statusId: string) => {
+    if (!contextMenu) return
+    const targetCol = localColumns.find((c) => c.id === statusId)
+    const lastOrder = targetCol?.tasks.at(-1)?.order ?? 0
+    moveTask.mutate({ taskId: contextMenu.task.id, statusId, order: lastOrder + 1000 })
+  }
+
+  const handleContextDelete = () => {
+    if (!contextMenu) return
+    if (!window.confirm('ลบงานนี้?')) return
+    deleteTask.mutate(contextMenu.task.id)
+  }
+
   const handleAddColumn = (e: React.FormEvent) => {
     e.preventDefault()
     const name = newColName.trim()
@@ -293,6 +327,7 @@ export default function KanbanBoard({ projectId }: Props) {
                 column={col}
                 onTaskClick={setSelectedTask}
                 onAddTask={handleAddTask}
+                onTaskContextMenu={handleContextMenu}
               />
             ))}
 
@@ -394,6 +429,22 @@ export default function KanbanBoard({ projectId }: Props) {
           projectId={projectId}
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
+        />
+      )}
+
+      {contextMenu && (
+        <CardContextMenu
+          task={contextMenu.task}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          columns={localColumns}
+          projectId={projectId}
+          onClose={() => setContextMenu(null)}
+          onOpen={() => { setSelectedTask(contextMenu.task); setContextMenu(null) }}
+          onAssign={handleContextAssign}
+          onPriority={handleContextPriority}
+          onMoveTo={handleContextMoveTo}
+          onDelete={handleContextDelete}
         />
       )}
 
