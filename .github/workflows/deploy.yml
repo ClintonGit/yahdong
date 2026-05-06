@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Checkout
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory '*'
           if [ -d .git ]; then
             git fetch origin
             git reset --hard ${{ github.sha }}
