@@ -50,6 +50,7 @@ export interface Task {
   description?: string | null
   statusId: string
   priority: TaskPriority
+  startDate?: string | null
   dueDate?: string | null
   coverImage?: string | null
   coverColor?: string | null
@@ -77,6 +78,7 @@ export interface UpdateTaskInput {
   description?: string
   priority?: TaskPriority
   assigneeIds?: string[]
+  startDate?: string | null
   dueDate?: string | null
   coverImage?: string | null
   coverColor?: string | null

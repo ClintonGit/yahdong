@@ -44,6 +44,9 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description ?? '')
   const [priority, setPriority] = useState<TaskPriority>(task.priority)
+  const [startDate, setStartDate] = useState(
+    task.startDate ? task.startDate.split('T')[0] : '',
+  )
   const [dueDate, setDueDate] = useState(
     task.dueDate ? task.dueDate.split('T')[0] : '',
   )
@@ -62,6 +65,7 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
     title !== task.title ||
     description !== (task.description ?? '') ||
     priority !== task.priority ||
+    startDate !== (task.startDate ? task.startDate.split('T')[0] : '') ||
     dueDate !== (task.dueDate ? task.dueDate.split('T')[0] : '') ||
     coverImage !== task.coverImage ||
     coverColor !== task.coverColor ||
@@ -75,6 +79,7 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
+        startDate: startDate || null,
         dueDate: dueDate || null,
         coverImage: coverImage ?? null,
         coverColor: coverColor ?? null,
@@ -250,12 +255,17 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
 
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
-                    กำหนดส่ง
+                    ช่วงเวลา
                   </p>
+                  <DatePicker
+                    value={startDate}
+                    onChange={setStartDate}
+                    placeholder="วันเริ่มต้น"
+                  />
                   <DatePicker
                     value={dueDate}
                     onChange={setDueDate}
-                    placeholder="เลือกวัน"
+                    placeholder="วันสิ้นสุด"
                   />
                 </div>
 

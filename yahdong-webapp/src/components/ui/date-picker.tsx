@@ -74,6 +74,7 @@ export function DatePicker({
       <PopoverContent
         className="w-auto p-0 border-[var(--color-border-forest)] bg-[var(--color-paper)] shadow-lg"
         align="start"
+        onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Quick shortcuts */}
         <div className="flex gap-1 p-2 border-b border-[var(--color-border-forest)]/40 flex-wrap">

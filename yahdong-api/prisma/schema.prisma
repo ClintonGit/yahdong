@@ -130,6 +130,7 @@ model Task {
   statusId       String
   priority       TaskPriority  @default(medium)
   sprintId       String?
+  startDate      DateTime?
   dueDate        DateTime?
   coverImage     String?
   coverColor     String?
