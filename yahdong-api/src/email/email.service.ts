@@ -113,9 +113,10 @@ export class EmailService {
     inviterName: string
     projectName: string
     projectId: string
+    inviteLink?: string
   }) {
-    const { inviteeName, inviteeEmail, inviterName, projectName, projectId } = opts
-    const projectUrl = `${this.appUrl}/projects/${projectId}`
+    const { inviteeName, inviteeEmail, inviterName, projectName, projectId, inviteLink } = opts
+    const actionUrl = inviteLink ?? `${this.appUrl}/projects/${projectId}`
     await this.send(
       inviteeEmail,
       `🌿 ${inviterName} เชิญคุณเข้าร่วม ${projectName}`,
@@ -129,8 +130,8 @@ export class EmailService {
           <strong>${inviterName}</strong> เชิญคุณเข้าร่วมโปรเจค
           <strong style="color:#E8A030">"${projectName}"</strong>
         </p>
-        <a href="${projectUrl}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#E8A030;color:#fff;border-radius:10px;text-decoration:none;font-weight:600">
-          เปิดโปรเจค →
+        <a href="${actionUrl}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#E8A030;color:#fff;border-radius:10px;text-decoration:none;font-weight:600">
+          รับคำเชิญ →
         </a>
         <p style="color:#94A3B8;font-size:12px;margin-top:32px;border-top:1px solid #e5e7eb;padding-top:16px">
           อย่าดอง — Kanban สำหรับทีม 🌿

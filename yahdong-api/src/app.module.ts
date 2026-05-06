@@ -9,6 +9,7 @@ import { EmailModule } from './email/email.module'
 import { CommentsModule } from './comments/comments.module'
 import { UploadsModule } from './uploads/uploads.module'
 import { PublicModule } from './public/public.module'
+import { NotificationsModule } from './notifications/notifications.module'
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PublicModule } from './public/public.module'
     CommentsModule,
     UploadsModule,
     PublicModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

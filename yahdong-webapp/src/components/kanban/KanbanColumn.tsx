@@ -15,9 +15,10 @@ interface Props {
   onTaskClick: (task: Task) => void
   onAddTask: (statusId: string, title: string) => void
   onTaskContextMenu: (e: React.MouseEvent, task: Task) => void
+  unreadTaskIds?: Set<string>
 }
 
-export default function KanbanColumn({ column, onTaskClick, onAddTask, onTaskContextMenu }: Props) {
+export default function KanbanColumn({ column, onTaskClick, onAddTask, onTaskContextMenu, unreadTaskIds }: Props) {
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
 
@@ -97,6 +98,7 @@ export default function KanbanColumn({ column, onTaskClick, onAddTask, onTaskCon
               task={task}
               onClick={() => onTaskClick(task)}
               onContextMenu={onTaskContextMenu}
+              hasUnread={unreadTaskIds?.has(task.id)}
             />
           ))}
         </SortableContext>

@@ -1,26 +1,37 @@
-import { UserIcon, XIcon } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu'
+import { useState } from 'react'
+import { Users, X, Check } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { useMembers } from '../../hooks/useMembers'
+import type { TaskAssignee } from '../../api/tasks'
 
 interface Props {
   projectId: string
-  assigneeId?: string | null
-  assignee?: { id: string; name: string; avatar?: string | null } | null
-  onChange: (userId: string | null) => void
+  assignees: TaskAssignee[]
+  onChange: (ids: string[]) => void
 }
 
-export default function AssigneePicker({ projectId, assigneeId, assignee, onChange }: Props) {
+export default function AssigneePicker({ projectId, assignees, onChange }: Props) {
+  const [open, setOpen] = useState(false)
   const { data: members = [] } = useMembers(projectId)
 
+  const selectedIds = new Set(assignees.map((a) => a.userId))
+
+  const handleToggle = (userId: string) => {
+    const next = new Set(selectedIds)
+    if (next.has(userId)) next.delete(userId)
+    else next.add(userId)
+    onChange(Array.from(next))
+  }
+
+  const handleClearAll = () => {
+    onChange([])
+    setOpen(false)
+  }
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
         className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border transition-colors"
         style={{
           borderColor: 'var(--color-border-forest)',
@@ -28,61 +39,77 @@ export default function AssigneePicker({ projectId, assigneeId, assignee, onChan
           background: 'transparent',
         }}
       >
-        {assignee ? (
+        {assignees.length === 0 ? (
           <>
-            <Avatar className="w-4 h-4">
-              <AvatarImage src={assignee.avatar ?? undefined} />
-              <AvatarFallback
-                style={{ background: 'var(--color-primary)', color: 'white', fontSize: '0.5rem' }}
-              >
-                {assignee.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate max-w-[100px]">{assignee.name}</span>
-          </>
-        ) : (
-          <>
-            <UserIcon className="size-3 text-[var(--color-primary)]" />
+            <Users className="size-3 text-[var(--color-primary)]" />
             มอบหมาย
           </>
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        style={{ background: 'var(--color-paper)' }}
-        className="w-48 border-[var(--color-border-forest)]"
-      >
-        {assigneeId && (
-          <DropdownMenuItem
-            onClick={() => onChange(null)}
-            className="gap-2 text-red-500 cursor-pointer"
-          >
-            <XIcon className="size-3.5" />
-            ยกเลิกการมอบหมาย
-          </DropdownMenuItem>
-        )}
-        {members.map((member) => (
-          <DropdownMenuItem
-            key={member.id}
-            onClick={() => onChange(member.id)}
-            className="gap-2 cursor-pointer"
-            style={{ color: 'var(--color-text)' }}
-          >
-            <Avatar className="w-5 h-5">
-              <AvatarImage src={member.avatar ?? undefined} />
-              <AvatarFallback
-                style={{ background: 'var(--color-primary)', color: 'white', fontSize: '0.55rem' }}
-              >
-                {member.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate">{member.name}</span>
-            {member.id === assigneeId && (
-              <span className="ml-auto text-[var(--color-primary)]">✓</span>
+        ) : (
+          <div className="flex items-center gap-1">
+            {assignees.slice(0, 3).map((a) => (
+              <Avatar key={a.userId} className="w-5 h-5 -ml-1 first:ml-0 border border-[var(--color-paper)]">
+                <AvatarImage src={a.user.avatar ?? undefined} />
+                <AvatarFallback style={{ background: 'var(--color-primary)', color: 'white', fontSize: '0.45rem' }}>
+                  {a.user.name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+            {assignees.length > 3 && (
+              <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                +{assignees.length - 3}
+              </span>
             )}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          </div>
+        )}
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-56 p-0 border-[var(--color-border-forest)] bg-[var(--color-paper)] shadow-lg"
+        align="start"
+      >
+        <div className="p-2 border-b border-[var(--color-border-forest)]/40">
+          <p className="text-xs font-semibold" style={{ color: 'var(--color-muted-foreground)' }}>
+            มอบหมายให้
+          </p>
+        </div>
+        <div className="max-h-48 overflow-y-auto p-1">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-red-500 hover:bg-black/5 mb-0.5"
+            >
+              <X className="size-3.5" />
+              ยกเลิกทั้งหมด
+            </button>
+          )}
+          {members.map((member) => {
+            const selected = selectedIds.has(member.id)
+            return (
+              <div
+                key={member.id}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-black/5"
+                onClick={() => handleToggle(member.id)}
+              >
+                <Avatar className="w-6 h-6 shrink-0">
+                  <AvatarImage src={member.avatar ?? undefined} />
+                  <AvatarFallback style={{ background: 'var(--color-primary)', color: 'white', fontSize: '0.5rem' }}>
+                    {member.name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="flex-1 text-sm truncate" style={{ color: 'var(--color-text)' }}>
+                  {member.name}
+                </span>
+                {selected && <Check className="size-3.5 text-[var(--color-primary)]" />}
+              </div>
+            )
+          })}
+          {members.length === 0 && (
+            <p className="text-xs text-center py-3" style={{ color: 'var(--color-muted-foreground)' }}>
+              ไม่มีสมาชิก
+            </p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }

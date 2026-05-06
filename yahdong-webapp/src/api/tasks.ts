@@ -38,6 +38,11 @@ export interface ChecklistItem {
   createdAt: string
 }
 
+export interface TaskAssignee {
+  userId: string
+  user: TaskUser
+}
+
 export interface Task {
   id: string
   projectId: string
@@ -45,14 +50,13 @@ export interface Task {
   description?: string | null
   statusId: string
   priority: TaskPriority
-  assigneeId?: string | null
   dueDate?: string | null
   coverImage?: string | null
   coverColor?: string | null
   order: number
   createdBy: string
   createdAt: string
-  assignee?: TaskUser | null
+  assignees?: TaskAssignee[]
   status?: TaskStatus
   labels?: TaskLabel[]
   checklistItems?: ChecklistItem[]
@@ -64,7 +68,7 @@ export interface CreateTaskInput {
   statusId: string
   description?: string
   priority?: TaskPriority
-  assigneeId?: string
+  assigneeIds?: string[]
   dueDate?: string
 }
 
@@ -72,7 +76,7 @@ export interface UpdateTaskInput {
   title?: string
   description?: string
   priority?: TaskPriority
-  assigneeId?: string | null
+  assigneeIds?: string[]
   dueDate?: string | null
   coverImage?: string | null
   coverColor?: string | null

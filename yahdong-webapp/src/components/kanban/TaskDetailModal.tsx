@@ -48,7 +48,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
   )
   const [coverImage, setCoverImage] = useState<string | null | undefined>(task.coverImage)
   const [coverColor, setCoverColor] = useState<string | null | undefined>(task.coverColor)
-  const [assigneeId, setAssigneeId] = useState<string | null | undefined>(task.assigneeId)
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map((a) => a.userId) ?? [])
 
   const updateTask = useUpdateTask(projectId)
   const deleteTask = useDeleteTask(projectId)
@@ -56,6 +56,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
 
   const commentImages = (comments ?? []).filter((c) => c.imageUrl)
 
+  const taskAssigneeIds = task.assignees?.map((a) => a.userId) ?? []
   const isDirty =
     title !== task.title ||
     description !== (task.description ?? '') ||
@@ -63,7 +64,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
     dueDate !== (task.dueDate ? task.dueDate.split('T')[0] : '') ||
     coverImage !== task.coverImage ||
     coverColor !== task.coverColor ||
-    assigneeId !== task.assigneeId
+    JSON.stringify([...assigneeIds].sort()) !== JSON.stringify([...taskAssigneeIds].sort())
 
   const handleSave = async () => {
     if (!title.trim()) return
@@ -76,7 +77,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
         dueDate: dueDate || null,
         coverImage: coverImage ?? null,
         coverColor: coverColor ?? null,
-        assigneeId: assigneeId ?? null,
+        assigneeIds,
       })
       onClose()
     } catch {
@@ -185,9 +186,10 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
                   </p>
                   <AssigneePicker
                     projectId={projectId}
-                    assigneeId={assigneeId}
-                    assignee={task.assignee}
-                    onChange={setAssigneeId}
+                    assignees={task.assignees?.filter((a) =>
+                      assigneeIds.includes(a.userId)
+                    ) ?? []}
+                    onChange={setAssigneeIds}
                   />
                 </div>
 
@@ -330,7 +332,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
 
             {/* Comments — full width below */}
             <div className="mt-5 pt-5 border-t" style={{ borderColor: 'var(--color-border-forest)' }}>
-              <CommentSection taskId={task.id} />
+              <CommentSection taskId={task.id} projectId={projectId} />
             </div>
           </div>
         </div>

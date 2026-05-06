@@ -16,9 +16,10 @@ interface Props {
   task: Task
   onClick: () => void
   onContextMenu: (e: React.MouseEvent, task: Task) => void
+  hasUnread?: boolean
 }
 
-export default function TaskCard({ task, onClick, onContextMenu }: Props) {
+export default function TaskCard({ task, onClick, onContextMenu, hasUnread }: Props) {
   const {
     setNodeRef,
     attributes,
@@ -130,36 +131,69 @@ export default function TaskCard({ task, onClick, onContextMenu }: Props) {
           </div>
         )}
 
-        {(task.assignee || task.dueDate) && (
+        {(task.assignees?.length || task.dueDate || hasUnread) ? (
           <div
             className="flex items-center justify-between mt-2 pt-2 border-t"
             style={{ borderColor: 'var(--color-border)' }}
           >
-            {task.dueDate ? (
-              <span
-                className="text-xs"
-                style={{ color: isOverdue ? '#EF4444' : 'var(--color-muted-foreground)' }}
-              >
-                {new Date(task.dueDate).toLocaleDateString('th-TH', {
-                  day: 'numeric',
-                  month: 'short',
-                })}
-              </span>
-            ) : (
-              <span />
-            )}
-            {task.assignee && (
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center
-                           text-xs font-semibold shrink-0"
-                style={{ background: 'var(--color-primary)', color: 'white' }}
-                title={task.assignee.name}
-              >
-                {task.assignee.name.slice(0, 1).toUpperCase()}
+            <div className="flex items-center gap-1">
+              {task.dueDate ? (
+                <span
+                  className="text-xs"
+                  style={{ color: isOverdue ? '#EF4444' : 'var(--color-muted-foreground)' }}
+                >
+                  {new Date(task.dueDate).toLocaleDateString('th-TH', {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </span>
+              ) : null}
+              {hasUnread && (
+                <span
+                  className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold"
+                  style={{ background: '#EF4444', color: 'white' }}
+                  title="มีการ mention ที่ยังไม่ได้อ่าน"
+                >
+                  @
+                </span>
+              )}
+            </div>
+            {task.assignees && task.assignees.length > 0 && (
+              <div className="flex items-center">
+                {task.assignees.slice(0, 3).map((a, i) => (
+                  <div
+                    key={a.userId}
+                    className="w-6 h-6 rounded-full flex items-center justify-center
+                               text-xs font-semibold shrink-0 border-2"
+                    style={{
+                      background: 'var(--color-primary)',
+                      color: 'white',
+                      borderColor: 'var(--color-paper)',
+                      marginLeft: i > 0 ? '-6px' : 0,
+                      zIndex: 3 - i,
+                      position: 'relative',
+                    }}
+                    title={a.user.name}
+                  >
+                    {a.user.name.slice(0, 1).toUpperCase()}
+                  </div>
+                ))}
+                {task.assignees.length > 3 && (
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold -ml-1.5 border-2"
+                    style={{
+                      background: 'var(--color-border-forest)',
+                      color: 'var(--color-muted-foreground)',
+                      borderColor: 'var(--color-paper)',
+                    }}
+                  >
+                    +{task.assignees.length - 3}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Dong-02: overdue badge */}

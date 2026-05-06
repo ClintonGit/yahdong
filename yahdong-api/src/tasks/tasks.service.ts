@@ -13,6 +13,10 @@ import { SetLabelsDto } from './dto/set-labels.dto'
 import { CreateChecklistItemDto } from './dto/create-checklist-item.dto'
 import { UpdateChecklistItemDto } from './dto/update-checklist-item.dto'
 
+const ASSIGNEE_INCLUDE = {
+  assignees: { include: { user: { select: { id: true, name: true, avatar: true } } } },
+}
+
 @Injectable()
 export class TasksService {
   constructor(
@@ -24,7 +28,7 @@ export class TasksService {
     return this.prisma.task.findMany({
       where: { projectId },
       include: {
-        assignee: { select: { id: true, name: true, avatar: true } },
+        ...ASSIGNEE_INCLUDE,
         status: true,
         labels: { include: { label: true } },
         _count: { select: { checklistItems: true } },
@@ -34,27 +38,46 @@ export class TasksService {
   }
 
   async create(projectId: string, userId: string, dto: CreateTaskDto) {
+    const { assigneeIds, ...rest } = dto
+
     const lastTask = await this.prisma.task.findFirst({
       where: { projectId, statusId: dto.statusId },
       orderBy: { order: 'desc' },
     })
     const order = (lastTask?.order ?? 0) + 1000
 
-    return this.prisma.task.create({
-      data: { ...dto, projectId, createdBy: userId, order },
+    const task = await this.prisma.task.create({
+      data: { ...rest, projectId, createdBy: userId, order },
       include: {
-        assignee: { select: { id: true, name: true, avatar: true } },
+        ...ASSIGNEE_INCLUDE,
         status: true,
         labels: { include: { label: true } },
       },
     })
+
+    if (assigneeIds?.length) {
+      await this.prisma.taskAssignee.createMany({
+        data: assigneeIds.map((uid) => ({ taskId: task.id, userId: uid })),
+        skipDuplicates: true,
+      })
+      return this.prisma.task.findUnique({
+        where: { id: task.id },
+        include: {
+          ...ASSIGNEE_INCLUDE,
+          status: true,
+          labels: { include: { label: true } },
+        },
+      })
+    }
+
+    return task
   }
 
   async findOne(taskId: string) {
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        assignee: { select: { id: true, name: true, avatar: true } },
+        ...ASSIGNEE_INCLUDE,
         status: true,
         labels: { include: { label: true } },
         checklistItems: { orderBy: { order: 'asc' } },
@@ -66,52 +89,73 @@ export class TasksService {
   }
 
   async update(taskId: string, actorId: string, dto: UpdateTaskDto) {
-    const oldAssigneeId = dto.assigneeId !== undefined
-      ? (await this.prisma.task.findUnique({ where: { id: taskId }, select: { assigneeId: true, projectId: true } }))
-      : null
+    const { assigneeIds, ...rest } = dto
 
-    const task = await this.prisma.task.update({
+    if (assigneeIds !== undefined) {
+      const task = await this.prisma.$transaction(async (tx) => {
+        await tx.taskAssignee.deleteMany({ where: { taskId } })
+        if (assigneeIds.length > 0) {
+          await tx.taskAssignee.createMany({
+            data: assigneeIds.map((userId) => ({ taskId, userId })),
+            skipDuplicates: true,
+          })
+        }
+        return tx.task.update({
+          where: { id: taskId },
+          data: rest,
+          include: {
+            ...ASSIGNEE_INCLUDE,
+            status: true,
+            labels: { include: { label: true } },
+          },
+        })
+      })
+
+      // Fire email notifications for newly assigned users
+      if (assigneeIds.length > 0) {
+        void this.fireAssigneeEmails(taskId, task.projectId, assigneeIds, actorId, task.title)
+      }
+
+      return task
+    }
+
+    return this.prisma.task.update({
       where: { id: taskId },
-      data: dto,
+      data: rest,
       include: {
-        assignee: { select: { id: true, name: true, email: true, avatar: true } },
+        ...ASSIGNEE_INCLUDE,
         status: true,
         labels: { include: { label: true } },
       },
     })
-
-    if (
-      oldAssigneeId &&
-      dto.assigneeId &&
-      dto.assigneeId !== oldAssigneeId.assigneeId &&
-      task.assignee
-    ) {
-      void this.fireAssigneeEmail(task.id, task.title, oldAssigneeId.projectId, task.assignee, actorId)
-    }
-
-    return task
   }
 
-  private async fireAssigneeEmail(
+  private async fireAssigneeEmails(
     _taskId: string,
-    taskTitle: string,
     projectId: string,
-    assignee: { name: string; email: string },
+    assigneeIds: string[],
     actorId: string,
+    taskTitle: string,
   ) {
-    const [actor, project] = await Promise.all([
+    const [actor, project, assignees] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: actorId }, select: { name: true } }),
       this.prisma.project.findUnique({ where: { id: projectId }, select: { name: true } }),
+      this.prisma.user.findMany({
+        where: { id: { in: assigneeIds } },
+        select: { name: true, email: true },
+      }),
     ])
     if (!actor || !project) return
-    void this.email.sendTaskAssigned({
-      assigneeName: assignee.name,
-      assigneeEmail: assignee.email,
-      assignerName: actor.name,
-      taskTitle,
-      projectName: project.name,
-      projectId,
-    })
+    for (const assignee of assignees) {
+      void this.email.sendTaskAssigned({
+        assigneeName: assignee.name,
+        assigneeEmail: assignee.email,
+        assignerName: actor.name,
+        taskTitle,
+        projectName: project.name,
+        projectId,
+      })
+    }
   }
 
   async remove(taskId: string) {

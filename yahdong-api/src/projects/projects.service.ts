@@ -104,10 +104,19 @@ export class ProjectsService {
     })
     if (exists) throw new ConflictException('Already a member')
 
-    const member = await this.prisma.projectMember.create({
-      data: { projectId, userId: invitee.id, role: dto.role },
-      include: { user: { select: { id: true, name: true, avatar: true } } },
+    const pendingInvite = await this.prisma.projectInvite.findFirst({
+      where: { projectId, email: dto.email, usedAt: null, expiresAt: { gt: new Date() } },
     })
+    if (pendingInvite) throw new ConflictException('Invite already sent')
+
+    const token = randomBytes(24).toString('hex')
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await this.prisma.projectInvite.create({
+      data: { projectId, token, email: dto.email, role: dto.role, expiresAt },
+    })
+
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+    const inviteLink = `${frontendUrl}/invite/${token}`
 
     if (inviter && project) {
       void this.email.sendProjectInvite({
@@ -116,10 +125,25 @@ export class ProjectsService {
         inviterName: inviter.name,
         projectName: project.name,
         projectId: project.id,
+        inviteLink,
       })
     }
 
-    return member
+    return { message: 'Invite sent', email: dto.email }
+  }
+
+  async getProjectInvites(projectId: string) {
+    return this.prisma.projectInvite.findMany({
+      where: { projectId, usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
+    })
+  }
+
+  async cancelInvite(projectId: string, inviteId: string) {
+    await this.prisma.projectInvite.delete({
+      where: { id: inviteId, projectId },
+    })
   }
 
   async updateMember(projectId: string, userId: string, dto: UpdateMemberDto, currentUserId: string) {
@@ -239,7 +263,7 @@ export class ProjectsService {
         statuses: { orderBy: { order: 'asc' } },
         tasks: {
           include: {
-            assignee: { select: { id: true, name: true, avatar: true } },
+            assignees: { include: { user: { select: { id: true, name: true, avatar: true } } } },
             status: true,
             labels: { include: { label: true } },
           },

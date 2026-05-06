@@ -59,6 +59,20 @@ export const inviteApi = {
     api.post<{ projectId: string; role: string }>(`/invite/${token}/accept`),
 }
 
+export interface PendingInvite {
+  id: string
+  email: string | null
+  role: 'owner' | 'member' | 'viewer'
+  expiresAt: string
+  createdAt: string
+}
+
+export const pendingInvitesApi = {
+  list: (projectId: string) => api.get<PendingInvite[]>(`/projects/${projectId}/invites`),
+  cancel: (projectId: string, inviteId: string) =>
+    api.delete(`/projects/${projectId}/invites/${inviteId}`),
+}
+
 export const publicBoardApi = {
   getBoard: (shareToken: string) => api.get(`/b/${shareToken}`),
 }

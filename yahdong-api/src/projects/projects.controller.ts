@@ -88,6 +88,22 @@ export class ProjectsController {
     return this.projects.removeMember(id, userId)
   }
 
+  // ── Pending Invites ──────────────────────────────────────────────────────
+  @Get(':id/invites')
+  @UseGuards(ProjectGuard)
+  @Roles('owner')
+  getInvites(@Param('id') id: string) {
+    return this.projects.getProjectInvites(id)
+  }
+
+  @Delete(':id/invites/:inviteId')
+  @HttpCode(204)
+  @UseGuards(ProjectGuard)
+  @Roles('owner')
+  cancelInvite(@Param('id') id: string, @Param('inviteId') inviteId: string) {
+    return this.projects.cancelInvite(id, inviteId)
+  }
+
   // ── Star ─────────────────────────────────────────────────────────────────
   @Patch(':id/star')
   @UseGuards(ProjectGuard)

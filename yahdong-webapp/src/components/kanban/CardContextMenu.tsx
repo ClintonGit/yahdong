@@ -111,7 +111,7 @@ export default function CardContextMenu({
   }, [onClose])
 
   const otherColumns = columns.filter((c) => c.id !== task.statusId)
-  const currentAssignee = members.find((m) => m.id === task.assigneeId)
+  const assigneeIds = new Set(task.assignees?.map((a) => a.userId) ?? [])
 
   return createPortal(
     <div
@@ -142,10 +142,10 @@ export default function CardContextMenu({
             label={
               <span className="flex items-center gap-1.5">
                 มอบหมาย
-                {currentAssignee && (
+                {assigneeIds.size > 0 && (
                   <span className="text-xs px-1.5 py-0.5 rounded-full ml-1"
                     style={{ background: 'var(--color-primary)20', color: 'var(--color-primary)' }}>
-                    {currentAssignee.name}
+                    {assigneeIds.size}
                   </span>
                 )}
               </span>
@@ -194,7 +194,7 @@ export default function CardContextMenu({
             </span>
           </div>
 
-          {task.assigneeId && (
+          {assigneeIds.size > 0 && (
             <button
               type="button"
               onClick={() => { onAssign(null); onClose() }}
@@ -204,7 +204,7 @@ export default function CardContextMenu({
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
             >
               <XIcon className="size-3.5 shrink-0" />
-              ยกเลิกการมอบหมาย
+              ยกเลิกทั้งหมด
             </button>
           )}
 
@@ -214,12 +214,12 @@ export default function CardContextMenu({
             </p>
           ) : (
             members.map((m) => {
-              const isSelected = m.id === task.assigneeId
+              const isSelected = assigneeIds.has(m.id)
               return (
                 <button
                   key={m.id}
                   type="button"
-                  onClick={() => { onAssign(m.id); onClose() }}
+                  onClick={() => { onAssign(m.id) }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md text-left transition-colors"
                   style={{ color: 'var(--color-text)' }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--color-border-forest)' }}

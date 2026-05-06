@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from './ui/dialog'
@@ -8,8 +8,10 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
-import { CopyIcon, CheckIcon, LinkIcon, GlobeIcon, XIcon, ImageIcon, Trash2Icon } from 'lucide-react'
+import { CopyIcon, CheckIcon, LinkIcon, GlobeIcon, XIcon, ImageIcon, Trash2Icon, ClockIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Project, ProjectMember } from '../api/projects'
+import { pendingInvitesApi } from '../api/projects'
 import { useMembers } from '../hooks/useMembers'
 import { useUpdateProject, useDeleteProject, useGenerateInviteLink, useToggleShare } from '../hooks/useProjects'
 import api from '../lib/axios'
@@ -93,16 +95,28 @@ export default function ProjectSettingsModal({ project, onClose }: Props) {
   }
 
   const qc = useQueryClient()
+  const { data: pendingInvites = [] } = useQuery({
+    queryKey: ['invites', project.id],
+    queryFn: () => pendingInvitesApi.list(project.id).then((r) => r.data),
+    enabled: tab === 'members',
+  })
+
+  const cancelInvite = useMutation({
+    mutationFn: (inviteId: string) => pendingInvitesApi.cancel(project.id, inviteId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['invites', project.id] }),
+  })
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inviteEmail.trim()) return
     try {
       await api.post(`/projects/${project.id}/members`, { email: inviteEmail.trim(), role: 'member' })
       setInviteEmail('')
-      qc.invalidateQueries({ queryKey: ['members', project.id] })
+      toast.success('ส่งคำเชิญแล้ว รอฝั่งนั้นตอบรับค่ะ')
+      qc.invalidateQueries({ queryKey: ['invites', project.id] })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'เกิดข้อผิดพลาด'
-      alert(msg)
+      toast.error(msg)
     }
   }
 
@@ -352,6 +366,43 @@ export default function ProjectSettingsModal({ project, onClose }: Props) {
                   />
                 ))}
               </div>
+
+              {/* Pending invites */}
+              {isOwner && pendingInvites.length > 0 && (
+                <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--color-border-forest)' }}>
+                  <p className="text-xs font-semibold flex items-center gap-1.5 uppercase tracking-wider"
+                    style={{ color: 'var(--color-muted-foreground)' }}>
+                    <ClockIcon className="size-3" /> รอตอบรับ ({pendingInvites.length})
+                  </p>
+                  {pendingInvites.map((inv) => (
+                    <div key={inv.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+                      style={{ background: 'var(--color-card)', border: '1px solid var(--color-border-forest)' }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
+                        style={{ background: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}>
+                        ?
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate" style={{ color: 'var(--color-text)' }}>{inv.email}</p>
+                        <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                          หมดอายุ {new Date(inv.expiresAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
+                        </p>
+                      </div>
+                      <span className="text-xs px-2 py-0.5 rounded-full"
+                        style={{ background: 'var(--color-border)', color: 'var(--color-muted-foreground)' }}>
+                        {inv.role}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => cancelInvite.mutate(inv.id)}
+                        className="p-1 rounded hover:bg-red-500/10 transition-colors shrink-0"
+                        title="ยกเลิกคำเชิญ"
+                      >
+                        <XIcon className="size-3.5 text-red-400" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>

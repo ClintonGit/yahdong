@@ -33,6 +33,7 @@ import { Button } from '../ui/button'
 import { dongToast } from '../../lib/dongToast'
 import dong06 from '../../assets/dong/dong-sticker-06-กลับบ้าน.png'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
+import { useNotifications, useMarkTaskRead } from '../../hooks/useNotifications'
 import type { TaskPriority } from '../../api/tasks'
 
 const COLUMN_COLORS = [
@@ -64,6 +65,12 @@ export default function KanbanBoard({ projectId }: Props) {
   const deleteTask = useDeleteTask(projectId)
   const reorderStatuses = useReorderStatuses(projectId)
   const createStatus = useCreateStatus(projectId)
+  const { data: notifications = [] } = useNotifications()
+  const markTaskRead = useMarkTaskRead()
+
+  const unreadTaskIds = new Set(
+    notifications.filter((n) => !n.readAt).map((n) => n.taskId),
+  )
 
   useEffect(() => {
     if (!activeTask && !activeColumn) {
@@ -239,7 +246,16 @@ export default function KanbanBoard({ projectId }: Props) {
 
   const handleContextAssign = (userId: string | null) => {
     if (!contextMenu) return
-    updateTask.mutate({ taskId: contextMenu.task.id, assigneeId: userId })
+    const currentIds = contextMenu.task.assignees?.map((a) => a.userId) ?? []
+    let newIds: string[]
+    if (userId === null) {
+      newIds = []
+    } else if (currentIds.includes(userId)) {
+      newIds = currentIds.filter((id) => id !== userId)
+    } else {
+      newIds = [...currentIds, userId]
+    }
+    updateTask.mutate({ taskId: contextMenu.task.id, assigneeIds: newIds })
   }
 
   const handleContextPriority = (priority: TaskPriority) => {
@@ -325,9 +341,13 @@ export default function KanbanBoard({ projectId }: Props) {
               <KanbanColumn
                 key={col.id}
                 column={col}
-                onTaskClick={setSelectedTask}
+                onTaskClick={(task) => {
+                  setSelectedTask(task)
+                  if (unreadTaskIds.has(task.id)) markTaskRead.mutate(task.id)
+                }}
                 onAddTask={handleAddTask}
                 onTaskContextMenu={handleContextMenu}
+                unreadTaskIds={unreadTaskIds}
               />
             ))}
 
