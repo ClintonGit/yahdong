@@ -98,8 +98,13 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
 
   const hasCover = coverImage || coverColor
 
+  const handleClose = () => {
+    if (isDirty && !window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกหรือไม่?')) return
+    onClose()
+  }
+
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
+    <Dialog open onOpenChange={(open) => { if (!open) handleClose() }}>
       <DialogContent
         style={{ background: 'var(--color-paper)' }}
         className="!flex !flex-col w-full max-w-4xl sm:max-w-4xl max-h-[92vh] overflow-hidden p-0 gap-0"
@@ -130,9 +135,23 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
         <div className="overflow-y-auto flex-1">
           <div className="px-6 pt-5 pb-6">
             <DialogHeader className="mb-4">
-              <DialogTitle style={{ color: 'var(--color-text)', fontFamily: 'var(--font-family-heading)', fontSize: '1.1rem' }}>
-                รายละเอียดงาน
-              </DialogTitle>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <DialogTitle style={{ color: 'var(--color-text)', fontFamily: 'var(--font-family-heading)', fontSize: '1.1rem' }}>
+                  รายละเอียดงาน
+                </DialogTitle>
+                {isDirty && (
+                  <span
+                    className="text-[9px] font-bold px-2 py-0.5 rounded-full tracking-widest uppercase shrink-0"
+                    style={{
+                      background: 'var(--color-primary)',
+                      color: 'white',
+                      animation: 'badge-appear 0.18s ease-out',
+                    }}
+                  >
+                    ยังไม่บันทึก
+                  </span>
+                )}
+              </div>
             </DialogHeader>
 
             {/* 2-column layout */}
@@ -313,7 +332,7 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
                     <Button
                       variant="ghost"
                       className="flex-1 text-sm"
-                      onClick={onClose}
+                      onClick={handleClose}
                       style={{ color: 'var(--color-muted-foreground)' }}
                     >
                       ปิด
