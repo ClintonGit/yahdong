@@ -24,7 +24,9 @@ function NotifItem({ notif, onNavigate }: { notif: Notification; onNavigate: () 
   const handleClick = () => {
     if (isUnread) markRead.mutate(notif.id)
     onNavigate()
-    navigate(`/projects/${notif.task.projectId}`)
+    const params = new URLSearchParams({ task: notif.taskId })
+    if (notif.commentId) params.set('comment', notif.commentId)
+    navigate(`/projects/${notif.task.projectId}?${params}`)
   }
 
   return (

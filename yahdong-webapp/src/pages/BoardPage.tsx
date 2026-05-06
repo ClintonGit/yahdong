@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { ChevronRight, Settings2Icon } from 'lucide-react'
 import { useProjects } from '../hooks/useProjects'
 import KanbanBoard from '../components/kanban/KanbanBoard'
@@ -7,9 +7,13 @@ import ProjectSettingsModal from '../components/ProjectSettingsModal'
 
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const { data: projects } = useProjects()
   const project = projects?.find((p) => p.id === id)
   const [showSettings, setShowSettings] = useState(false)
+
+  const deepLinkTaskId = searchParams.get('task') ?? undefined
+  const deepLinkCommentId = searchParams.get('comment') ?? undefined
 
   if (!id) return null
 
@@ -79,7 +83,7 @@ export default function BoardPage() {
 
       {/* Board */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <KanbanBoard projectId={id} />
+        <KanbanBoard projectId={id} deepLinkTaskId={deepLinkTaskId} deepLinkCommentId={deepLinkCommentId} />
       </div>
 
       {showSettings && project && (

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
   DragOverlay,
@@ -43,14 +44,19 @@ const COLUMN_COLORS = [
 
 interface Props {
   projectId: string
+  deepLinkTaskId?: string
+  deepLinkCommentId?: string
 }
 
-export default function KanbanBoard({ projectId }: Props) {
+export default function KanbanBoard({ projectId, deepLinkTaskId, deepLinkCommentId }: Props) {
+  const navigate = useNavigate()
   const { columns: serverColumns, isLoading, isError } = useBoard(projectId)
   const [localColumns, setLocalColumns] = useState<Column[]>([])
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [activeColumn, setActiveColumn] = useState<TaskStatus | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [highlightCommentId, setHighlightCommentId] = useState<string | undefined>()
+  const deepLinkHandled = useRef(false)
   const [contextMenu, setContextMenu] = useState<{ task: Task; x: number; y: number } | null>(null)
   const [showAddCol, setShowAddCol] = useState(false)
   const [newColName, setNewColName] = useState('')
@@ -78,6 +84,16 @@ export default function KanbanBoard({ projectId }: Props) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverColumns])
+
+  useEffect(() => {
+    if (!deepLinkTaskId || deepLinkHandled.current || localColumns.length === 0) return
+    const task = localColumns.flatMap((c) => c.tasks).find((t) => t.id === deepLinkTaskId)
+    if (!task) return
+    deepLinkHandled.current = true
+    setSelectedTask(task)
+    setHighlightCommentId(deepLinkCommentId)
+    navigate(`/projects/${projectId}`, { replace: true })
+  }, [deepLinkTaskId, deepLinkCommentId, localColumns, projectId, navigate])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -448,7 +464,8 @@ export default function KanbanBoard({ projectId }: Props) {
         <TaskDetailModal
           projectId={projectId}
           task={selectedTask}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => { setSelectedTask(null); setHighlightCommentId(undefined) }}
+          highlightCommentId={highlightCommentId}
         />
       )}
 

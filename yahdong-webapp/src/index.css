@@ -285,6 +285,25 @@ body {
   outline: none;
 }
 
+/* ─── Comment flash highlight (mention deep-link) ──────── */
+@keyframes comment-flash {
+  0%   { background-color: transparent; }
+  8%   { background-color: rgba(232, 160, 48, 0.38); }
+  18%  { background-color: rgba(232, 160, 48, 0.06); }
+  28%  { background-color: rgba(232, 160, 48, 0.38); }
+  38%  { background-color: rgba(232, 160, 48, 0.06); }
+  48%  { background-color: rgba(232, 160, 48, 0.38); }
+  65%  { background-color: rgba(232, 160, 48, 0.28); }
+  100% { background-color: transparent; }
+}
+
+.comment-flash {
+  animation: comment-flash 2.6s ease-out forwards;
+  border-radius: 8px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+}
+
 /* ─── Glitter snap effect ───────────────────────────────── */
 @keyframes glitter-fly {
   0%   { transform: translate(-50%, -50%) scale(1); opacity: 1; }

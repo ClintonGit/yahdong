@@ -79,15 +79,18 @@ function CommentItem({
 interface Props {
   taskId: string
   projectId: string
+  highlightCommentId?: string
 }
 
-export default function CommentSection({ taskId, projectId }: Props) {
+export default function CommentSection({ taskId, projectId, highlightCommentId }: Props) {
   const { data: comments = [], isLoading } = useComments(taskId)
   const addComment = useAddComment(taskId)
   const deleteComment = useDeleteComment(taskId)
   const currentUser = useAuthStore((s) => s.user)
 
   const { data: members = [] } = useMembers(projectId)
+  const listRef = useRef<HTMLDivElement>(null)
+  const flashedRef = useRef(false)
 
   const [body, setBody] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -138,6 +141,23 @@ export default function CommentSection({ taskId, projectId }: Props) {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [mentionOpen])
+
+  useEffect(() => {
+    if (!highlightCommentId || comments.length === 0 || flashedRef.current) return
+    const el = document.getElementById(`comment-${highlightCommentId}`)
+    if (!el || !listRef.current) return
+    flashedRef.current = true
+    // Scroll within the comment list container, then flash
+    setTimeout(() => {
+      const container = listRef.current!
+      const top = el.offsetTop - container.offsetTop - 8
+      container.scrollTo({ top, behavior: 'smooth' })
+      setTimeout(() => {
+        el.classList.add('comment-flash')
+        el.addEventListener('animationend', () => el.classList.remove('comment-flash'), { once: true })
+      }, 350)
+    }, 300)
+  }, [highlightCommentId, comments])
 
   const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -193,14 +213,15 @@ export default function CommentSection({ taskId, projectId }: Props) {
       </div>
 
       {comments.length > 0 && (
-        <div className="space-y-3 max-h-56 overflow-y-auto mb-3 pr-1">
+        <div ref={listRef} className="space-y-3 max-h-56 overflow-y-auto mb-3 pr-1">
           {comments.map((c) => (
-            <CommentItem
-              key={c.id}
-              comment={c}
-              currentUserId={currentUser?.id}
-              onDelete={() => deleteComment.mutate(c.id)}
-            />
+            <div key={c.id} id={`comment-${c.id}`}>
+              <CommentItem
+                comment={c}
+                currentUserId={currentUser?.id}
+                onDelete={() => deleteComment.mutate(c.id)}
+              />
+            </div>
           ))}
         </div>
       )}

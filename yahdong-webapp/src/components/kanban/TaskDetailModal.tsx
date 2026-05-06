@@ -37,9 +37,10 @@ interface Props {
   projectId: string
   task: Task
   onClose: () => void
+  highlightCommentId?: string
 }
 
-export default function TaskDetailModal({ projectId, task, onClose }: Props) {
+export default function TaskDetailModal({ projectId, task, onClose, highlightCommentId }: Props) {
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description ?? '')
   const [priority, setPriority] = useState<TaskPriority>(task.priority)
@@ -332,7 +333,7 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
 
             {/* Comments — full width below */}
             <div className="mt-5 pt-5 border-t" style={{ borderColor: 'var(--color-border-forest)' }}>
-              <CommentSection taskId={task.id} projectId={projectId} />
+              <CommentSection taskId={task.id} projectId={projectId} highlightCommentId={highlightCommentId} />
             </div>
           </div>
         </div>
