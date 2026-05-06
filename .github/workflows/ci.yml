@@ -16,6 +16,7 @@ jobs:
       - name: Checkout
         run: |
           apk add --no-cache git
+          git config --global --add safe.directory /__w/yahdong/yahdong
           if [ -d .git ]; then
             git fetch origin
             git reset --hard ${{ github.sha }}
