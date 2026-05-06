@@ -1,7 +1,9 @@
 import Sidebar from './Sidebar'
 import NotificationBell from './NotificationBell'
+import { useNotificationAlerts } from '../hooks/useNotificationAlerts'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
+  useNotificationAlerts()
   return (
     <div
       className="flex h-screen overflow-hidden"

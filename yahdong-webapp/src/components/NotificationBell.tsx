@@ -3,6 +3,7 @@ import { Bell } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { useNotifications, useMarkAllRead, useMarkRead } from '../hooks/useNotifications'
+import { requestBrowserNotificationPermission } from '../hooks/useNotificationAlerts'
 import type { Notification } from '../api/notifications'
 
 function formatTime(iso: string) {
@@ -58,8 +59,13 @@ export default function NotificationBell() {
 
   const unreadCount = notifications.filter((n) => !n.readAt).length
 
+  const handleOpenChange = (next: boolean) => {
+    if (next) requestBrowserNotificationPermission()
+    setOpen(next)
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         className="relative p-2 rounded-lg hover:bg-black/5 transition-colors"
         title="แจ้งเตือน"
