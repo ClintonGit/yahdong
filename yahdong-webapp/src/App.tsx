@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProjectsPage from './pages/ProjectsPage'
 import BoardPage from './pages/BoardPage'
+import InvitePage from './pages/InvitePage'
+import PublicBoardPage from './pages/PublicBoardPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppShell from './components/AppShell'
 
@@ -46,6 +48,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/invite/:token" element={<InvitePage />} />
+          <Route path="/b/:shareToken" element={<PublicBoardPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>

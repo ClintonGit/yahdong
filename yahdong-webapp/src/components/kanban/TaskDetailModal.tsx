@@ -11,6 +11,7 @@ import { Label } from '../ui/label'
 import { DatePicker } from '../ui/date-picker'
 import { RichTextEditor } from '../ui/rich-text-editor'
 import { PaletteIcon, XIcon, ImageIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Task, TaskPriority } from '../../api/tasks'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
 import { useComments } from '../../hooks/useComments'
@@ -66,23 +67,31 @@ export default function TaskDetailModal({ projectId, task, onClose }: Props) {
 
   const handleSave = async () => {
     if (!title.trim()) return
-    await updateTask.mutateAsync({
-      taskId: task.id,
-      title: title.trim(),
-      description: description.trim() || undefined,
-      priority,
-      dueDate: dueDate || null,
-      coverImage: coverImage ?? null,
-      coverColor: coverColor ?? null,
-      assigneeId: assigneeId ?? null,
-    })
-    onClose()
+    try {
+      await updateTask.mutateAsync({
+        taskId: task.id,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        dueDate: dueDate || null,
+        coverImage: coverImage ?? null,
+        coverColor: coverColor ?? null,
+        assigneeId: assigneeId ?? null,
+      })
+      onClose()
+    } catch {
+      toast.error('บันทึกไม่สำเร็จ กรุณาลองใหม่')
+    }
   }
 
   const handleDelete = async () => {
     if (!window.confirm('ลบงานนี้?')) return
-    await deleteTask.mutateAsync(task.id)
-    onClose()
+    try {
+      await deleteTask.mutateAsync(task.id)
+      onClose()
+    } catch {
+      toast.error('ลบงานไม่สำเร็จ กรุณาลองใหม่')
+    }
   }
 
   const hasCover = coverImage || coverColor

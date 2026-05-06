@@ -30,6 +30,18 @@ export function useDeleteLabel(projectId: string) {
   })
 }
 
+export function useUpdateLabel(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ labelId, ...data }: { labelId: string; name?: string; color?: string }) =>
+      labelsApi.update(labelId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: labelsKey(projectId) })
+      qc.invalidateQueries({ queryKey: tasksKey(projectId) })
+    },
+  })
+}
+
 export function useSetTaskLabels(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
