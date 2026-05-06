@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -19,6 +19,7 @@ type FormData = z.infer<typeof schema>
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
   const [serverError, setServerError] = useState('')
 
@@ -38,7 +39,8 @@ export default function LoginPage() {
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
       })
-      navigate('/')
+      const redirect = searchParams.get('redirect')
+      navigate(redirect ?? '/')
     } catch {
       setServerError('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
     }
