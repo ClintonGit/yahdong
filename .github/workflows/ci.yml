@@ -28,6 +28,9 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      - name: Fix native modules for musl/Alpine
+        run: cd yahdong-webapp && npm rebuild @tailwindcss/oxide --update-binary
+
       - name: Generate Prisma client
         run: cd yahdong-api && npx prisma generate
         env:
