@@ -16,6 +16,7 @@ jobs:
       - name: Checkout
         run: |
           git config --global --add safe.directory '*'
+          [ -d .git ] && chmod -R a+rwX .git || true
           if [ -d .git ]; then
             git fetch origin
             git reset --hard ${{ github.sha }}
