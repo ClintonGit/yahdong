@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Fix native modules for musl/Alpine
-        run: cd yahdong-webapp && npm rebuild @tailwindcss/oxide --update-binary
+        run: cd yahdong-webapp && npm install --no-save --ignore-scripts=false @tailwindcss/oxide-linux-x64-musl
 
       - name: Generate Prisma client
         run: cd yahdong-api && npx prisma generate
