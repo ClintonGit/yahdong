@@ -9,12 +9,33 @@ import { randomUUID } from 'crypto'
 import { join } from 'path'
 import { mkdir, writeFile } from 'fs/promises'
 
+const ALLOWED_IMAGE_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+])
+
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
 export class UploadsController {
   @Post()
   @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (ALLOWED_IMAGE_MIME.has(file.mimetype)) {
+          cb(null, true)
+        } else {
+          cb(
+            new BadRequestException(
+              `Unsupported file type: ${file.mimetype}. Allowed: jpeg, png, webp, gif`,
+            ),
+            false,
+          )
+        }
+      },
+    }),
   )
   async upload(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file uploaded')

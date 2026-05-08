@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { publicBoardApi } from '../api/projects'
+import { getFileUrl } from '../lib/utils'
 
 interface PublicTask {
   id: string
@@ -67,7 +68,7 @@ export default function PublicBoardPage() {
       {/* Header */}
       {board.coverImage && (
         <div className="relative w-full h-28 shrink-0 overflow-hidden">
-          <img src={board.coverImage} alt="" className="w-full h-full object-cover" />
+          <img src={getFileUrl(board.coverImage) ?? ''} alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40" />
         </div>
       )}

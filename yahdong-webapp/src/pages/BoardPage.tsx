@@ -4,6 +4,7 @@ import { ChevronRight, Settings2Icon } from 'lucide-react'
 import { useProjects } from '../hooks/useProjects'
 import KanbanBoard from '../components/kanban/KanbanBoard'
 import ProjectSettingsModal from '../components/ProjectSettingsModal'
+import { getFileUrl } from '../lib/utils'
 
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>()
@@ -17,7 +18,7 @@ export default function BoardPage() {
 
   if (!id) return null
 
-  const coverUrl = project?.coverImage
+  const coverUrl = getFileUrl(project?.coverImage)
 
   return (
     <div

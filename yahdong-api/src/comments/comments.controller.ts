@@ -5,10 +5,11 @@ import {
 import { CommentsService } from './comments.service'
 import { CreateCommentDto } from './dto/create-comment.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { ProjectGuard } from '../common/guards/project.guard'
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator'
 
 @Controller()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ProjectGuard)
 export class CommentsController {
   constructor(private comments: CommentsService) {}
 

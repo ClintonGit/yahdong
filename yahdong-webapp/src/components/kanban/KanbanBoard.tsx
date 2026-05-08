@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCorners,
@@ -74,8 +75,10 @@ export default function KanbanBoard({ projectId, deepLinkTaskId, deepLinkComment
   const { data: notifications = [] } = useNotifications()
   const markTaskRead = useMarkTaskRead()
 
-  const unreadTaskIds = new Set(
-    notifications.filter((n) => !n.readAt).map((n) => n.taskId),
+  // P0 #8 — memo unreadTaskIds (re-render เฉพาะตอน notifications เปลี่ยนจริง)
+  const unreadTaskIds = useMemo(
+    () => new Set(notifications.filter((n) => !n.readAt).map((n) => n.taskId)),
+    [notifications],
   )
 
   useEffect(() => {
@@ -97,6 +100,10 @@ export default function KanbanBoard({ projectId, deepLinkTaskId, deepLinkComment
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // mobile touch — long-press 250ms ก่อน activate, tolerance 5px กันสไลด์ไถ
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    }),
   )
 
   const findColOfTask = useCallback(

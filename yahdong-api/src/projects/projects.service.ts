@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, ConflictException, BadRequestException,
+  Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException,
 } from '@nestjs/common'
 import { randomBytes } from 'crypto'
 import { PrismaService } from '../prisma/prisma.service'
@@ -26,7 +26,7 @@ export class ProjectsService {
 
   async findAll(userId: string) {
     const memberships = await this.prisma.projectMember.findMany({
-      where: { userId },
+      where: { userId, project: { deletedAt: null } },
       include: {
         project: {
           include: { _count: { select: { members: true } } },
@@ -67,8 +67,8 @@ export class ProjectsService {
   }
 
   async findOne(projectId: string) {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, deletedAt: null },
       include: {
         members: {
           include: { user: { select: { id: true, name: true, avatar: true } } },
@@ -214,6 +214,19 @@ export class ProjectsService {
 
   async acceptInvite(token: string, userId: string) {
     const invite = await this.getInvite(token)
+
+    // If invite is targeted (has email) → require accepting user's email match.
+    // Generic invite-links (email is null/empty) → membership check is sufficient.
+    if (invite.email && invite.email.trim().length > 0) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      })
+      if (!user) throw new ForbiddenException('User not found')
+      if (user.email.toLowerCase() !== invite.email.toLowerCase()) {
+        throw new ForbiddenException('Invite is addressed to a different email')
+      }
+    }
 
     const exists = await this.prisma.projectMember.findUnique({
       where: { projectId_userId: { projectId: invite.projectId, userId } },

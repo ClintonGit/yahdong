@@ -1,12 +1,18 @@
 import {
-  Injectable, NotFoundException, ForbiddenException,
+  Injectable, NotFoundException, ForbiddenException, Logger,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
+import { EmailService } from '../email/email.service'
 import { CreateCommentDto } from './dto/create-comment.dto'
 
 @Injectable()
 export class CommentsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(CommentsService.name)
+
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
 
   async findByTask(taskId: string) {
     return this.prisma.comment.findMany({
@@ -19,7 +25,7 @@ export class CommentsService {
   async create(taskId: string, userId: string, dto: CreateCommentDto) {
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
-      select: { id: true, projectId: true },
+      select: { id: true, projectId: true, title: true },
     })
     if (!task) throw new NotFoundException('Task not found')
 
@@ -32,9 +38,10 @@ export class CommentsService {
     if (dto.body) {
       const members = await this.prisma.projectMember.findMany({
         where: { projectId: task.projectId },
-        include: { user: { select: { id: true, name: true } } },
+        include: { user: { select: { id: true, name: true, email: true } } },
       })
       const notifications: { userId: string; taskId: string; commentId: string; type: string; body: string }[] = []
+      const mentionedMembers: { id: string; name: string; email: string }[] = []
       for (const m of members) {
         if (m.userId === userId) continue
         if (dto.body.includes(`@${m.user.name}`)) {
@@ -45,10 +52,28 @@ export class CommentsService {
             type: 'mention',
             body: `${comment.user.name} กล่าวถึงคุณใน comment`,
           })
+          mentionedMembers.push(m.user)
         }
       }
       if (notifications.length > 0) {
         await this.prisma.notification.createMany({ data: notifications })
+        // Fire-and-forget mention emails (mirrors tasks.service assign flow).
+        for (const target of mentionedMembers) {
+          void this.email
+            .sendCommentMention({
+              mentionedName: target.name,
+              mentionedEmail: target.email,
+              mentionerName: comment.user.name,
+              taskTitle: task.title,
+              commentBody: dto.body,
+              projectId: task.projectId,
+            })
+            .catch((err: unknown) =>
+              this.logger.error(
+                `sendCommentMention failed for ${target.email}: ${(err as Error).message}`,
+              ),
+            )
+        }
       }
     }
 

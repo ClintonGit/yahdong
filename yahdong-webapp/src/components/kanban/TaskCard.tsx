@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { endOfDay } from 'date-fns'
 import type { Task } from '../../api/tasks'
 import { getFileUrl } from '../../lib/utils'
 import dong02 from '../../assets/dong/dong-sticker-02-เลยกำหนด.png'
@@ -42,10 +43,21 @@ export default function TaskCard({ task, onClick, onContextMenu, hasUnread }: Pr
     onClick()
   }
 
-  const isOverdue = task.dueDate != null && new Date(task.dueDate) < new Date()
+  const isOverdue =
+    task.dueDate != null && endOfDay(new Date(task.dueDate)) < new Date()
   const prioColor = PRIORITY_COLOR[task.priority] ?? '#94A3B8'
   const coverUrl = getFileUrl(task.coverImage)
   const hasCover = coverUrl || task.coverColor
+
+  // Checklist progress — ใช้ task.checklistItems ที่ load มา (ถ้ามี)
+  // fallback: ถ้ามีแค่ _count.checklistItems → แสดง counter อย่างเดียว ไม่มี progress
+  const checklistTotal =
+    task.checklistItems?.length ?? task._count?.checklistItems ?? 0
+  const checklistChecked =
+    task.checklistItems?.filter((c) => c.checked).length ?? 0
+  const checklistPercent =
+    checklistTotal > 0 ? (checklistChecked / checklistTotal) * 100 : 0
+  const hasChecklistDetail = task.checklistItems != null
 
   return (
     <div
@@ -62,7 +74,8 @@ export default function TaskCard({ task, onClick, onContextMenu, hasUnread }: Pr
       onClick={handleClick}
       onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, task) }}
       className="rounded-xl border cursor-grab active:cursor-grabbing
-                 select-none hover:shadow-sm transition-shadow relative overflow-hidden"
+                 select-none hover:shadow-sm transition-shadow relative overflow-hidden
+                 touch-none"
     >
       {/* Cover: image or color */}
       {hasCover && (
@@ -114,19 +127,27 @@ export default function TaskCard({ task, onClick, onContextMenu, hasUnread }: Pr
         </div>
 
         {/* Checklist progress mini */}
-        {task._count && task._count.checklistItems > 0 && (
+        {checklistTotal > 0 && (
           <div className="mt-1.5 flex items-center gap-1.5">
-            <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--color-border-forest)' }}>
+            <div
+              className="flex-1 h-1 rounded-full overflow-hidden"
+              style={{ background: 'var(--color-border-forest)' }}
+            >
               <div
-                className="h-full rounded-full"
+                className="h-full rounded-full transition-[width] duration-300"
                 style={{
-                  width: '0%',
+                  width: `${checklistPercent}%`,
                   background: 'var(--color-primary)',
                 }}
               />
             </div>
-            <span className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>
-              0/{task._count.checklistItems}
+            <span
+              className="text-[10px]"
+              style={{ color: 'var(--color-muted-foreground)' }}
+            >
+              {hasChecklistDetail
+                ? `${checklistChecked}/${checklistTotal}`
+                : `${checklistTotal}`}
             </span>
           </div>
         )}

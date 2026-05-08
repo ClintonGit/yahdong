@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import CommentSection from './CommentSection'
 import LabelPicker from './LabelPicker'
 import ChecklistSection from './ChecklistSection'
 import AssigneePicker from './AssigneePicker'
+import { useMembers } from '../../hooks/useMembers'
 
 const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
   { value: 'low', label: 'ต่ำ', color: '#94A3B8' },
@@ -57,6 +58,19 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
   const updateTask = useUpdateTask(projectId)
   const deleteTask = useDeleteTask(projectId)
   const { data: comments } = useComments(task.id)
+  const { data: members } = useMembers(projectId)
+
+  // Preview ของ assignee — ต้อง derive จาก project members ไม่ใช่จาก task.assignees
+  // เพราะ user เพิ่งคลิกเลือกคนใหม่ที่ยังไม่อยู่ใน task.assignees → avatar จะหาย
+  const previewAssignees = useMemo(() => {
+    if (!members) return [] as { userId: string; user: { id: string; name: string; avatar?: string | null } }[]
+    return members
+      .filter((m) => assigneeIds.includes(m.id))
+      .map((m) => ({
+        userId: m.id,
+        user: { id: m.id, name: m.name, avatar: m.avatar ?? null },
+      }))
+  }, [members, assigneeIds])
 
   const commentImages = (comments ?? []).filter((c) => c.imageUrl)
 
@@ -211,9 +225,7 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
                   </p>
                   <AssigneePicker
                     projectId={projectId}
-                    assignees={task.assignees?.filter((a) =>
-                      assigneeIds.includes(a.userId)
-                    ) ?? []}
+                    assignees={previewAssignees}
                     onChange={setAssigneeIds}
                   />
                 </div>

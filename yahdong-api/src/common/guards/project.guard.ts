@@ -43,6 +43,14 @@ export class ProjectGuard implements CanActivate {
       projectId = item?.task.projectId ?? undefined
     }
 
+    if (!projectId && req.params.commentId) {
+      const comment = await this.prisma.comment.findUnique({
+        where: { id: req.params.commentId },
+        include: { task: { select: { projectId: true } } },
+      })
+      projectId = comment?.task.projectId ?? undefined
+    }
+
     if (!projectId || !userId) throw new ForbiddenException()
 
     const membership = await this.prisma.projectMember.findUnique({

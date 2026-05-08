@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, BadRequestException,
+  Injectable, NotFoundException, BadRequestException, ForbiddenException,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { EmailService } from '../email/email.service'
@@ -164,8 +164,21 @@ export class TasksService {
 
   async move(taskId: string, dto: MoveTaskDto) {
     return this.prisma.$transaction(async (tx) => {
-      const task = await tx.task.findUnique({ where: { id: taskId } })
+      const task = await tx.task.findUnique({
+        where: { id: taskId },
+        select: { id: true, projectId: true },
+      })
       if (!task) throw new NotFoundException()
+
+      const status = await tx.taskStatus.findUnique({
+        where: { id: dto.statusId },
+        select: { id: true, projectId: true },
+      })
+      if (!status) throw new NotFoundException('Status not found')
+      if (status.projectId !== task.projectId) {
+        throw new ForbiddenException('Cannot move task across projects')
+      }
+
       return tx.task.update({
         where: { id: taskId },
         data: { statusId: dto.statusId, order: dto.order },

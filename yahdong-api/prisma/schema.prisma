@@ -26,12 +26,13 @@ enum TaskPriority {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  passwordHash  String
-  avatar        String?
-  createdAt     DateTime  @default(now())
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatar       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   orgMembers      OrgMember[]
   projectMembers  ProjectMember[]
@@ -43,12 +44,16 @@ model User {
 }
 
 model RefreshToken {
-  id         String    @id @default(cuid())
-  userId     String
-  tokenHash  String
-  expiresAt  DateTime
-  revokedAt  DateTime?
-  user       User      @relation(fields: [userId], references: [id])
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Organization {
@@ -56,38 +61,46 @@ model Organization {
   name      String
   slug      String      @unique
   createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   members   OrgMember[]
   projects  Project[]
 }
 
 model OrgMember {
-  orgId  String
-  userId String
-  role   OrgRole @default(member)
-  org    Organization @relation(fields: [orgId], references: [id])
-  user   User         @relation(fields: [userId], references: [id])
+  orgId     String
+  userId    String
+  role      OrgRole      @default(member)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  org       Organization @relation(fields: [orgId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+
   @@id([orgId, userId])
+  @@index([userId])
 }
 
 model Project {
-  id          String    @id @default(cuid())
+  id          String          @id @default(cuid())
   orgId       String
   name        String
   slug        String
   description String?
   color       String?
   coverImage  String?
-  isPublic    Boolean   @default(false)
-  shareToken  String?   @unique
+  isPublic    Boolean         @default(false)
+  shareToken  String?         @unique
   deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   org         Organization    @relation(fields: [orgId], references: [id])
   members     ProjectMember[]
   statuses    TaskStatus[]
   tasks       Task[]
   invites     ProjectInvite[]
   labels      Label[]
+
   @@unique([orgId, slug])
+  @@index([orgId, deletedAt])
 }
 
 model ProjectMember {
@@ -95,9 +108,13 @@ model ProjectMember {
   userId    String
   role      ProjectRole @default(member)
   starred   Boolean     @default(false)
-  project   Project @relation(fields: [projectId], references: [id])
-  user      User    @relation(fields: [userId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  project   Project     @relation(fields: [projectId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+
   @@id([projectId, userId])
+  @@index([userId, projectId])
 }
 
 model ProjectInvite {
@@ -109,26 +126,33 @@ model ProjectInvite {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime    @default(now())
-  project   Project @relation(fields: [projectId], references: [id])
+  updatedAt DateTime    @updatedAt
+  project   Project     @relation(fields: [projectId], references: [id])
+
+  @@index([projectId, email])
 }
 
 model TaskStatus {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   projectId String
   name      String
   color     String
   order     Float
-  project   Project @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id])
   tasks     Task[]
+
+  @@index([projectId])
 }
 
 model Task {
-  id             String        @id @default(cuid())
+  id             String          @id @default(cuid())
   projectId      String
   title          String
   description    String?
   statusId       String
-  priority       TaskPriority  @default(medium)
+  priority       TaskPriority    @default(medium)
   sprintId       String?
   startDate      DateTime?
   dueDate        DateTime?
@@ -136,15 +160,24 @@ model Task {
   coverColor     String?
   order          Float
   createdBy      String
-  createdAt      DateTime      @default(now())
-  project        Project       @relation(fields: [projectId], references: [id])
-  status         TaskStatus    @relation(fields: [statusId], references: [id])
-  creator        User          @relation("creator", fields: [createdBy], references: [id])
+  deletedAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  project        Project         @relation(fields: [projectId], references: [id])
+  status         TaskStatus      @relation(fields: [statusId], references: [id])
+  creator        User            @relation("creator", fields: [createdBy], references: [id])
   comments       Comment[]
   labels         TaskLabel[]
   checklistItems ChecklistItem[]
   assignees      TaskAssignee[]
   notifications  Notification[]
+
+  @@index([projectId])
+  @@index([statusId])
+  @@index([projectId, statusId])
+  @@index([projectId, deletedAt])
+  @@index([dueDate])
+  @@index([startDate])
 }
 
 model Label {
@@ -152,16 +185,25 @@ model Label {
   projectId String
   name      String
   color     String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   project   Project     @relation(fields: [projectId], references: [id])
   tasks     TaskLabel[]
+
+  @@index([projectId])
 }
 
 model TaskLabel {
-  taskId  String
-  labelId String
-  task    Task  @relation(fields: [taskId], references: [id])
-  label   Label @relation(fields: [labelId], references: [id])
+  taskId    String
+  labelId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  task      Task     @relation(fields: [taskId], references: [id])
+  label     Label    @relation(fields: [labelId], references: [id])
+
   @@id([taskId, labelId])
+  @@index([taskId])
+  @@index([labelId])
 }
 
 model ChecklistItem {
@@ -171,26 +213,39 @@ model ChecklistItem {
   checked   Boolean  @default(false)
   order     Float
   createdAt DateTime @default(now())
-  task      Task @relation(fields: [taskId], references: [id])
+  updatedAt DateTime @updatedAt
+  task      Task     @relation(fields: [taskId], references: [id])
+
+  @@index([taskId])
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  taskId    String
-  userId    String
-  body      String
-  imageUrl  String?
-  createdAt DateTime @default(now())
-  task      Task @relation(fields: [taskId], references: [id])
-  user      User @relation(fields: [userId], references: [id])
+  id            String         @id @default(cuid())
+  taskId        String
+  userId        String
+  body          String
+  imageUrl      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  task          Task           @relation(fields: [taskId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  notifications Notification[]
+
+  @@index([taskId])
+  @@index([userId])
 }
 
 model TaskAssignee {
-  taskId  String
-  userId  String
-  task    Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@id([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
 }
 
 model Notification {
@@ -202,6 +257,12 @@ model Notification {
   body      String
   readAt    DateTime?
   createdAt DateTime  @default(now())
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  comment   Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([taskId])
+  @@index([commentId])
 }

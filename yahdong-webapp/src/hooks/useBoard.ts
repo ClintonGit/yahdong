@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   statusApi,
@@ -26,12 +27,18 @@ export function useBoard(projectId: string) {
     enabled: !!projectId,
   })
 
-  const columns: Column[] = (statusesQ.data ?? []).map((s) => ({
-    ...s,
-    tasks: (tasksQ.data ?? [])
-      .filter((t) => t.statusId === s.id)
-      .sort((a, b) => a.order - b.order),
-  }))
+  // Memo: re-compute เฉพาะตอน statuses/tasks เปลี่ยนจริง
+  // ป้องกัน cascade re-render ในทุก consumer ของ useBoard
+  const columns: Column[] = useMemo(() => {
+    const statuses = statusesQ.data ?? []
+    const tasks = tasksQ.data ?? []
+    return statuses.map((s) => ({
+      ...s,
+      tasks: tasks
+        .filter((t) => t.statusId === s.id)
+        .sort((a, b) => a.order - b.order),
+    }))
+  }, [statusesQ.data, tasksQ.data])
 
   return {
     columns,

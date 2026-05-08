@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { StarIcon } from 'lucide-react'
 import { Avatar, AvatarFallback } from './ui/avatar'
@@ -17,13 +17,25 @@ import CreateProjectModal from './CreateProjectModal'
 import dongDefault from '../assets/dong/dong-sticker-01-เห็นอยู่นะ.png'
 import dongEmpty from '../assets/dong/dong-sticker-05-ว่างอยู่.png'
 
-export default function Sidebar() {
+interface SidebarProps {
+  /** Mobile: ควบคุมจาก parent (AppShell) ผ่าน hamburger */
+  mobileOpen?: boolean
+  onMobileClose?: () => void
+}
+
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, clearAuth } = useAuthStore()
   const { data: projects, isLoading } = useProjects()
   const toggleStar = useToggleStar()
   const [showCreate, setShowCreate] = useState(false)
+
+  // ปิด mobile drawer อัตโนมัติเมื่อเปลี่ยนหน้า (e.g. คลิก project)
+  useEffect(() => {
+    if (mobileOpen) onMobileClose?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   const handleLogout = async () => {
     try {
@@ -78,8 +90,20 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="ปิดเมนู"
+          onClick={onMobileClose}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        />
+      )}
+
       <aside
-        className="w-60 h-screen flex flex-col border-r shrink-0"
+        className={`fixed md:static z-50 md:z-auto w-60 h-screen flex flex-col border-r shrink-0
+                    transition-transform duration-200 ease-out
+                    ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
         style={{
           background: 'var(--color-card)',
           borderColor: 'var(--color-border)',

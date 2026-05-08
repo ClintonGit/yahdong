@@ -15,6 +15,8 @@ import { pendingInvitesApi } from '../api/projects'
 import { useMembers } from '../hooks/useMembers'
 import { useUpdateProject, useDeleteProject, useGenerateInviteLink, useToggleShare } from '../hooks/useProjects'
 import api from '../lib/axios'
+import { getFileUrl } from '../lib/utils'
+import { Textarea } from './ui/textarea'
 
 const PROJECT_COLORS = [
   '#E8A030', '#4A7C5E', '#C8956A', '#8B6343',
@@ -31,6 +33,7 @@ export default function ProjectSettingsModal({ project, onClose }: Props) {
   const navigate = useNavigate()
   const [tab, setTab] = useState<'general' | 'members'>('general')
   const [name, setName] = useState(project.name)
+  const [description, setDescription] = useState(project.description ?? '')
   const [color, setColor] = useState(project.color)
   const [coverImage, setCoverImage] = useState<string | null | undefined>(project.coverImage)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -47,12 +50,19 @@ export default function ProjectSettingsModal({ project, onClose }: Props) {
 
   const isDirty =
     name !== project.name ||
+    description !== (project.description ?? '') ||
     color !== project.color ||
     coverImage !== project.coverImage
 
   const handleSave = async () => {
     if (!name.trim()) return
-    await updateProject.mutateAsync({ id: project.id, name: name.trim(), color, coverImage: coverImage ?? null })
+    await updateProject.mutateAsync({
+      id: project.id,
+      name: name.trim(),
+      description: description.trim(),
+      color,
+      coverImage: coverImage ?? null,
+    })
     onClose()
   }
 
@@ -61,6 +71,7 @@ export default function ProjectSettingsModal({ project, onClose }: Props) {
     try {
       const form = new FormData()
       form.append('file', file)
+      // backend คืน { url: '/uploads/...' } — เก็บแบบ raw, render ผ่าน getFileUrl()
       const res = await api.post<{ url: string }>('/uploads', form)
       setCoverImage(res.data.url)
     } finally {
@@ -172,7 +183,7 @@ export default function ProjectSettingsModal({ project, onClose }: Props) {
                   onClick={() => fileRef.current?.click()}
                 >
                   {coverImage ? (
-                    <img src={coverImage} alt="cover" className="w-full h-full object-cover" />
+                    <img src={getFileUrl(coverImage) ?? ''} alt="cover" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-white/70 text-xs">คลิกเพื่ออัพโหลดรูปปก</span>
                   )}
@@ -211,6 +222,20 @@ export default function ProjectSettingsModal({ project, onClose }: Props) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={!isOwner}
+                  style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+                />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <Label className="text-sm" style={{ color: 'var(--color-text)' }}>รายละเอียด</Label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  disabled={!isOwner}
+                  placeholder="อธิบายโปรเจคสั้นๆ ก็ได้ค่ะ"
+                  rows={3}
+                  className="resize-none"
                   style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
                 />
               </div>

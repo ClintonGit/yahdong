@@ -59,7 +59,8 @@ export default function KanbanColumn({ column, onTaskClick, onAddTask, onTaskCon
         {...attributes}
         {...listeners}
         className="flex items-center gap-2 px-3 py-2.5 rounded-t-2xl
-                   cursor-grab active:cursor-grabbing select-none border-b"
+                   cursor-grab active:cursor-grabbing select-none border-b
+                   touch-none"
         style={{
           background: 'var(--color-card)',
           borderColor: 'var(--color-border)',
