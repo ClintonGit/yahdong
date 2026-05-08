@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from './components/ui/sonner'
+import { ConfirmProvider } from './components/ui/confirm-dialog'
 import { queryClient } from './lib/queryClient'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -14,6 +15,7 @@ import AppShell from './components/AppShell'
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <ConfirmProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -54,6 +56,7 @@ export default function App() {
         </Routes>
       </BrowserRouter>
       <Toaster richColors position="top-right" />
+      </ConfirmProvider>
     </QueryClientProvider>
   )
 }

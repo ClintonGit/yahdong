@@ -17,6 +17,7 @@ import { useUpdateProject, useDeleteProject, useGenerateInviteLink, useToggleSha
 import api from '../lib/axios'
 import { getFileUrl } from '../lib/utils'
 import { Textarea } from './ui/textarea'
+import { useConfirm } from './ui/confirm-dialog'
 
 const PROJECT_COLORS = [
   '#E8A030', '#4A7C5E', '#C8956A', '#8B6343',
@@ -98,8 +99,16 @@ export default function ProjectSettingsModal({ project, onClose }: Props) {
     setTimeout(() => setCopiedShare(false), 2500)
   }
 
+  const confirm = useConfirm()
+
   const handleDelete = async () => {
-    if (!window.confirm(`ลบโปรเจค "${project.name}" ? ไม่สามารถย้อนกลับได้`)) return
+    const ok = await confirm({
+      title: `ลบโปรเจค "${project.name}"?`,
+      description: 'ไม่สามารถย้อนกลับได้',
+      confirmText: 'ลบโปรเจค',
+      variant: 'destructive',
+    })
+    if (!ok) return
     await deleteProject.mutateAsync(project.id)
     onClose()
     navigate('/projects')
@@ -444,13 +453,19 @@ function MemberRow({
   projectId: string
 }) {
   const qc = useQueryClient()
+  const confirm = useConfirm()
   const handleRemove = async () => {
-    if (!window.confirm(`ลบ ${member.name} ออกจากโปรเจค?`)) return
+    const ok = await confirm({
+      title: `ลบ ${member.name} ออกจากโปรเจค?`,
+      confirmText: 'ลบสมาชิก',
+      variant: 'destructive',
+    })
+    if (!ok) return
     try {
       await api.delete(`/projects/${projectId}/members/${member.id}`)
       qc.invalidateQueries({ queryKey: ['members', projectId] })
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'เกิดข้อผิดพลาด')
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'เกิดข้อผิดพลาด')
     }
   }
 

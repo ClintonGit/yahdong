@@ -29,6 +29,7 @@ import {
 import KanbanColumn from './KanbanColumn'
 import TaskDetailModal from './TaskDetailModal'
 import CardContextMenu from './CardContextMenu'
+import { useConfirm } from '../ui/confirm-dialog'
 import GlitterEffect from './GlitterEffect'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
@@ -293,9 +294,17 @@ export default function KanbanBoard({ projectId, deepLinkTaskId, deepLinkComment
     moveTask.mutate({ taskId: contextMenu.task.id, statusId, order: lastOrder + 1000 })
   }
 
-  const handleContextDelete = () => {
+  const confirm = useConfirm()
+
+  const handleContextDelete = async () => {
     if (!contextMenu) return
-    if (!window.confirm('ลบงานนี้?')) return
+    const ok = await confirm({
+      title: 'ลบงานนี้?',
+      description: 'การลบจะไม่สามารถย้อนกลับได้',
+      confirmText: 'ลบ',
+      variant: 'destructive',
+    })
+    if (!ok) return
     deleteTask.mutate(contextMenu.task.id)
   }
 

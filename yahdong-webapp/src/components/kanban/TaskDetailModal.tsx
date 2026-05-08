@@ -14,6 +14,7 @@ import { PaletteIcon, XIcon, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Task, TaskPriority } from '../../api/tasks'
 import { useUpdateTask, useDeleteTask } from '../../hooks/useBoard'
+import { useConfirm } from '../ui/confirm-dialog'
 import { useComments } from '../../hooks/useComments'
 import { getFileUrl } from '../../lib/utils'
 import CommentSection from './CommentSection'
@@ -105,8 +106,16 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
     }
   }
 
+  const confirm = useConfirm()
+
   const handleDelete = async () => {
-    if (!window.confirm('ลบงานนี้?')) return
+    const ok = await confirm({
+      title: 'ลบงานนี้?',
+      description: 'การลบจะไม่สามารถย้อนกลับได้',
+      confirmText: 'ลบ',
+      variant: 'destructive',
+    })
+    if (!ok) return
     try {
       await deleteTask.mutateAsync(task.id)
       onClose()
@@ -117,8 +126,17 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
 
   const hasCover = coverImage || coverColor
 
-  const handleClose = () => {
-    if (isDirty && !window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกหรือไม่?')) return
+  const handleClose = async () => {
+    if (isDirty) {
+      const ok = await confirm({
+        title: 'ออกโดยไม่บันทึก?',
+        description: 'การเปลี่ยนแปลงที่ยังไม่บันทึกจะหายไป',
+        confirmText: 'ออก',
+        cancelText: 'ทำต่อ',
+        variant: 'destructive',
+      })
+      if (!ok) return
+    }
     onClose()
   }
 
