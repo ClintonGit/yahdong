@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { endOfDay } from 'date-fns'
+import { AlertTriangleIcon } from 'lucide-react'
 import type { Task } from '../../api/tasks'
 import { getFileUrl } from '../../lib/utils'
 import dong02 from '../../assets/dong/dong-sticker-02-เลยกำหนด.png'
@@ -46,6 +47,7 @@ export default function TaskCard({ task, onClick, onContextMenu, hasUnread }: Pr
   const isOverdue =
     task.dueDate != null && endOfDay(new Date(task.dueDate)) < new Date()
   const prioColor = PRIORITY_COLOR[task.priority] ?? '#94A3B8'
+  const isUrgent = task.priority === 'urgent'
   const coverUrl = getFileUrl(task.coverImage)
   const hasCover = coverUrl || task.coverColor
 
@@ -66,8 +68,15 @@ export default function TaskCard({ task, onClick, onContextMenu, hasUnread }: Pr
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.3 : 1,
-        background: 'var(--color-paper)',
-        borderColor: isOverdue ? '#EF444440' : 'var(--color-border)',
+        background: isUrgent
+          ? 'color-mix(in srgb, #DC2626 6%, var(--color-paper))'
+          : 'var(--color-paper)',
+        borderColor: isUrgent
+          ? '#DC262666'
+          : isOverdue
+            ? '#EF444440'
+            : 'var(--color-border)',
+        boxShadow: isUrgent ? '0 0 0 1px #DC262633' : undefined,
       }}
       {...attributes}
       {...listeners}
@@ -77,6 +86,18 @@ export default function TaskCard({ task, onClick, onContextMenu, hasUnread }: Pr
                  select-none hover:shadow-sm transition-shadow relative overflow-hidden
                  touch-none"
     >
+      {/* Urgent priority flag — มุมบนซ้าย */}
+      {isUrgent && (
+        <div
+          className="absolute top-1.5 left-1.5 z-10 flex items-center justify-center
+                     w-5 h-5 rounded-full shadow-sm"
+          style={{ background: '#DC2626', color: 'white' }}
+          title="งานด่วน — ต้องการความสนใจเร่งด่วน"
+        >
+          <AlertTriangleIcon className="w-3 h-3" strokeWidth={2.5} />
+        </div>
+      )}
+
       {/* Cover: image or color */}
       {hasCover && (
         <div className="w-full h-[90px] overflow-hidden">

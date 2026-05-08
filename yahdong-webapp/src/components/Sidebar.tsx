@@ -14,8 +14,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useProjects, useToggleStar } from '../hooks/useProjects'
 import { authApi } from '../api/auth'
 import CreateProjectModal from './CreateProjectModal'
-import dongDefault from '../assets/dong/dong-sticker-01-เห็นอยู่นะ.png'
-import dongEmpty from '../assets/dong/dong-sticker-05-ว่างอยู่.png'
+import { resolveMascotMood, MASCOT_CAPTION, MASCOT_ASSET } from '../lib/mascotMood'
 
 interface SidebarProps {
   /** Mobile: ควบคุมจาก parent (AppShell) ผ่าน hamburger */
@@ -47,6 +46,18 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
   const starred = (projects ?? []).filter((p) => p.starred)
   const rest = (projects ?? []).filter((p) => !p.starred)
+
+  // Mascot mood — Phase 1: ใช้แค่ projectCount (Option A)
+  // Phase 2: เมื่อมี endpoint /projects/aggregate-stats จะ feed ค่าจริงเข้า resolver
+  // ตอนนี้ส่ง stub 0 สำหรับ field อื่น → resolver จะ return 'empty' หรือ 'watching'
+  const projectCount = projects?.length ?? 0
+  const mascotMood = resolveMascotMood({
+    projectCount,
+    totalTasks: 0,
+    doneTasks: 0,
+    overdueTasks: 0,
+    inProgressTasks: 0,
+  })
 
   const ProjectLink = ({ p }: { p: NonNullable<typeof projects>[number] }) => {
     const active = location.pathname === `/projects/${p.id}`
@@ -166,7 +177,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         {/* ดอง mascot */}
         <div className="px-3 pb-2 flex items-end gap-2">
           <img
-            src={projects && projects.length === 0 ? dongEmpty : dongDefault}
+            src={MASCOT_ASSET[mascotMood]}
             alt="ดอง"
             className="w-16 h-16 object-contain shrink-0"
           />
@@ -178,7 +189,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
               maxWidth: 120,
             }}
           >
-            {projects && projects.length === 0 ? 'ว่างอยู่เลย' : 'ดองเห็นอยู่นะ'}
+            {MASCOT_CAPTION[mascotMood]}
           </div>
         </div>
 

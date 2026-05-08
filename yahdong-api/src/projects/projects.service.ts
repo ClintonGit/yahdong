@@ -13,9 +13,9 @@ import { CreateLabelDto } from './dto/create-label.dto'
 import { UpdateLabelDto } from './dto/update-label.dto'
 
 const DEFAULT_STATUSES = [
-  { name: 'Backlog', color: '#94A3B8', order: 1000 },
-  { name: 'In Progress', color: '#F59E0B', order: 2000 },
-  { name: 'Done', color: '#22C55E', order: 3000 },
+  { name: 'ที่ต้องทำ', color: '#94A3B8', order: 1000 },
+  { name: 'กำลังทำ', color: '#F59E0B', order: 2000 },
+  { name: 'เสร็จแล้ว', color: '#22C55E', order: 3000 },
 ]
 
 @Injectable()

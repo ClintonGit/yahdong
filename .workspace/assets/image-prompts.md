@@ -1,5 +1,5 @@
 # Image Generation Prompts — อย่าดอง (yahdong)
-> Updated: 2026-04-30
+> Updated: 2026-05-09 (added stickers 07-09 for Calm Mascot mood mapping)
 
 ## Mascot "ดอง" — Capybara
 
@@ -123,6 +123,80 @@ Style: flat vector, sticker-cut (white outline around each),
 soft pastel background per sticker, LINE/Telegram sticker aesthetic,
 consistent character proportions, all 6 on one canvas
 ```
+
+---
+
+---
+
+## 🆕 Sticker 07-09 (Calm Mascot Update 2026-05-09)
+
+> Phase 2D adds 3 new moods mapping to board status (`todo / backlog / overdue`).
+> Style **identical** to stickers 01-06 — same character, same palette, NO accessories.
+> Backward compat: stickers 01-06 stay; these add to the set.
+
+### [ChatGPT / DALL-E 3] — 3 New Stickers
+```
+Create 3 NEW chibi capybara sticker illustrations to extend an existing 6-sticker
+pack for app mascot "Dong" (ดอง). Match the existing style EXACTLY:
+- Warm caramel brown body (#8B6343), cream/beige belly (#F5EFE6)
+- NO accessories — clean simple character, deadpan-but-cute face
+- Flat vector, LINE sticker / Sanrio-adjacent aesthetic
+- Square with rounded corners, soft warm background, white stroke border
+- Thai text caption below each, Prompt/Kanit-style font
+- All 3 on one canvas
+
+Sticker 07 — sitting upright, head slightly tilted, eyes wide and observant
+   (calm watching, NOT judging — "ready when you are")
+Caption: "ดองมองอยู่"
+
+Sticker 08 — curled up sleeping peacefully under a small tree shade, eyes closed,
+   tiny "Z" floating above (soft nap, not exhausted)
+Caption: "ดองพักรอ"
+
+Sticker 09 — head tilted to one side, small question mark above, paw raised slightly,
+   gentle worried look (concerned for user, NOT angry or disappointed —
+   like a friend asking "is everything okay?")
+Caption: "ดองเป็นห่วง"
+
+Style: flat vector, sticker-cut, consistent character proportions across all 3
+and matching the existing 6-sticker pack. Warm forest palette.
+```
+
+### [Gemini] — 3 New Stickers
+```
+Illustrate 3 NEW chibi capybara stickers for Thai app mascot Dong (ดอง),
+extending an existing 6-sticker set. Match style EXACTLY:
+- Warm brown body, cream belly, NO accessories
+- Deadpan-but-cute face, flat vector, LINE sticker aesthetic
+
+3 stickers (with Thai captions):
+1. Sitting upright, head tilted, observant calm eyes — "ดองมองอยู่"
+   (watching peacefully, ready to help, NOT judging)
+2. Sleeping curled under tree shade, eyes closed, small "Z" — "ดองพักรอ"
+   (peaceful nap, work paused not abandoned)
+3. Head tilted, question mark, gentle worried face — "ดองเป็นห่วง"
+   (caring concern, NOT angry — friend asking "you okay?")
+
+All 3 on one canvas, consistent character, warm forest palette,
+sticker-cut white border, flat vector.
+
+CRITICAL: avoid "disappointed" or "angry" expressions on #3 —
+this replaces a previous side-eye sticker (#02 "เลยกำหนดแล้วนะ")
+to remove guilt-driven UX. The new mood is empathetic, not punitive.
+```
+
+### Mood Mapping (สำหรับ frontend dev)
+
+| State | Sticker | File |
+|-------|---------|------|
+| `todo` (มี task ยังไม่เริ่ม) | 07 ดองมองอยู่ | `dong-sticker-07-มองอยู่.png` |
+| `inprogress` (มี task กำลังทำ) | 01 ดองเห็นอยู่นะ | (existing) |
+| `backlog` (หยุดพัก) | 08 ดองพักรอ | `dong-sticker-08-พักรอ.png` |
+| `overdue` (มี task เลยกำหนด) | 09 ดองเป็นห่วง | `dong-sticker-09-เป็นห่วง.png` |
+| `done` (เสร็จเกือบหมด) | 03 ดองแช่ออนเซน | (existing) |
+| `empty` (ไม่มี project) | 05 ดองว่างอยู่ | (existing) |
+| `home` (เคลียร์หมดแล้ว) | 06 ดองกลับบ้าน | (existing) |
+| (toast เฉพาะ rage mode) | 02 ดองเลยกำหนด | (existing, **deprecated สำหรับ default UI** — keep for occasional toast only) |
 
 ---
 

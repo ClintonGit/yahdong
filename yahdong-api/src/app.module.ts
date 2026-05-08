@@ -12,6 +12,7 @@ import { CommentsModule } from './comments/comments.module'
 import { UploadsModule } from './uploads/uploads.module'
 import { PublicModule } from './public/public.module'
 import { NotificationsModule } from './notifications/notifications.module'
+import { UnfurlModule } from './unfurl/unfurl.module'
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { NotificationsModule } from './notifications/notifications.module'
     UploadsModule,
     PublicModule,
     NotificationsModule,
+    UnfurlModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
