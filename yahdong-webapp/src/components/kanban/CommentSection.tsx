@@ -1,4 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useComments, useAddComment, useDeleteComment } from '../../hooks/useComments'
 import { commentsApi } from '../../api/comments'
 import { useAuthStore } from '../../stores/authStore'
@@ -15,6 +17,29 @@ function formatTime(iso: string) {
     ' ' + d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
 }
 
+/** Click-to-expand image used inside markdown render. */
+function MarkdownImage({ src, alt }: { src?: string; alt?: string }) {
+  const [expanded, setExpanded] = useState(false)
+  if (!src) return null
+  // src may already be absolute (paste flow inserts absolute URL via getFileUrl)
+  // but support relative just in case future pastes store a relative path.
+  const resolved = src.startsWith('http') || src.startsWith('data:') ? src : (getFileUrl(src) ?? src)
+  return (
+    <img
+      src={resolved}
+      alt={alt ?? 'image'}
+      loading="lazy"
+      onClick={() => setExpanded((v) => !v)}
+      className="mt-1.5 rounded-lg border object-cover cursor-pointer hover:opacity-90 transition-opacity"
+      style={{
+        maxHeight: expanded ? 480 : 160,
+        maxWidth: '100%',
+        borderColor: 'var(--color-border)',
+      }}
+    />
+  )
+}
+
 function CommentItem({
   comment,
   currentUserId,
@@ -28,16 +53,16 @@ function CommentItem({
   const imgUrl = getFileUrl(comment.imageUrl)
 
   return (
-    <div className="flex gap-2.5 group">
+    <div className="flex gap-3 group py-1">
       <div
-        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 mt-0.5"
+        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 mt-0.5"
         style={{ background: 'var(--color-primary)', color: 'white' }}
       >
         {comment.user.name.slice(0, 1).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+          <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
             {comment.user.name}
           </span>
           <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
@@ -54,18 +79,87 @@ function CommentItem({
           )}
         </div>
         {comment.body && (
-          <p className="text-sm mt-0.5 whitespace-pre-wrap break-words" style={{ color: 'var(--color-text)' }}>
-            {comment.body}
-          </p>
+          <div
+            className="text-sm mt-1 break-words comment-md"
+            style={{ color: 'var(--color-text)' }}
+          >
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                img: ({ src, alt }) => (
+                  <MarkdownImage src={typeof src === 'string' ? src : undefined} alt={alt} />
+                ),
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}
+                  >
+                    {children}
+                  </a>
+                ),
+                code: ({ children }) => (
+                  <code
+                    style={{
+                      background: 'var(--color-muted, rgba(0,0,0,0.06))',
+                      padding: '1px 4px',
+                      borderRadius: 4,
+                      fontSize: '0.85em',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                    }}
+                  >
+                    {children}
+                  </code>
+                ),
+                p: ({ children }) => (
+                  <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{children}</p>
+                ),
+                ul: ({ children }) => (
+                  <ul style={{ margin: '4px 0', paddingLeft: 18, listStyle: 'disc' }}>
+                    {children}
+                  </ul>
+                ),
+                ol: ({ children }) => (
+                  <ol style={{ margin: '4px 0', paddingLeft: 18, listStyle: 'decimal' }}>
+                    {children}
+                  </ol>
+                ),
+                li: ({ children }) => (
+                  <li style={{ margin: '2px 0' }}>{children}</li>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote
+                    style={{
+                      borderLeft: '3px solid var(--color-border)',
+                      paddingLeft: 8,
+                      margin: '4px 0',
+                      color: 'var(--color-muted-foreground)',
+                    }}
+                  >
+                    {children}
+                  </blockquote>
+                ),
+                strong: ({ children }) => (
+                  <strong style={{ fontWeight: 600 }}>{children}</strong>
+                ),
+                em: ({ children }) => (
+                  <em style={{ fontStyle: 'italic' }}>{children}</em>
+                ),
+              }}
+            >
+              {comment.body}
+            </ReactMarkdown>
+          </div>
         )}
         {imgUrl && (
           <img
             src={imgUrl}
             alt="attachment"
             onClick={() => setExpanded(!expanded)}
-            className="mt-1.5 rounded-lg border object-cover cursor-pointer hover:opacity-90 transition-opacity"
+            className="mt-2 rounded-lg border object-cover cursor-pointer hover:opacity-90 transition-opacity"
             style={{
-              maxHeight: expanded ? 480 : 120,
+              maxHeight: expanded ? 480 : 140,
               maxWidth: '100%',
               borderColor: 'var(--color-border)',
             }}
@@ -96,6 +190,7 @@ export default function CommentSection({ taskId, projectId, highlightCommentId }
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [pasteUploading, setPasteUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -131,6 +226,49 @@ export default function CommentSection({ taskId, projectId, highlightCommentId }
     setMentionOpen(false)
     setMentionQuery('')
     setTimeout(() => textareaRef.current?.focus(), 0)
+  }
+
+  /** Insert markdown snippet at the textarea's caret and keep focus. */
+  const insertAtCaret = (snippet: string) => {
+    const ta = textareaRef.current
+    if (!ta) {
+      setBody((b) => b + snippet)
+      return
+    }
+    const start = ta.selectionStart ?? body.length
+    const end = ta.selectionEnd ?? body.length
+    const next = body.slice(0, start) + snippet + body.slice(end)
+    setBody(next)
+    // restore caret after the inserted snippet
+    requestAnimationFrame(() => {
+      const pos = start + snippet.length
+      ta.focus()
+      ta.setSelectionRange(pos, pos)
+    })
+  }
+
+  /** Ctrl+V paste image → upload then insert ![](url) at caret. */
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items
+    if (!items || items.length === 0) return
+    for (const item of items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (!file) return
+        setPasteUploading(true)
+        try {
+          const res = await commentsApi.upload(file)
+          const absolute = getFileUrl(res.url) ?? res.url
+          insertAtCaret(`![](${absolute})`)
+        } catch (err) {
+          console.error('Paste image upload failed', err)
+        } finally {
+          setPasteUploading(false)
+        }
+        return
+      }
+    }
   }
 
   useEffect(() => {
@@ -213,9 +351,22 @@ export default function CommentSection({ taskId, projectId, highlightCommentId }
       </div>
 
       {comments.length > 0 && (
-        <div ref={listRef} className="space-y-3 max-h-56 overflow-y-auto mb-3 pr-1">
-          {comments.map((c) => (
-            <div key={c.id} id={`comment-${c.id}`}>
+        <div ref={listRef} className="max-h-72 overflow-y-auto mb-3 pr-1">
+          {comments.map((c, idx) => (
+            <div
+              key={c.id}
+              id={`comment-${c.id}`}
+              className={
+                idx < comments.length - 1
+                  ? 'pb-4 mb-4 border-b'
+                  : 'pb-1'
+              }
+              style={
+                idx < comments.length - 1
+                  ? { borderColor: 'var(--color-border)' }
+                  : undefined
+              }
+            >
               <CommentItem
                 comment={c}
                 currentUserId={currentUser?.id}
@@ -275,7 +426,8 @@ export default function CommentSection({ taskId, projectId, highlightCommentId }
             value={body}
             onChange={handleBodyChange}
             onKeyDown={handleKeyDown}
-            placeholder="เขียน comment… (Enter ส่ง, Shift+Enter ขึ้นบรรทัด, @ แท็กเพื่อน)"
+            onPaste={handlePaste}
+            placeholder="เขียน comment… (Enter ส่ง, Shift+Enter ขึ้นบรรทัด, @ แท็กเพื่อน, Ctrl+V วางรูปได้)"
             rows={2}
             className="text-sm resize-none"
             style={{
@@ -283,6 +435,18 @@ export default function CommentSection({ taskId, projectId, highlightCommentId }
               borderColor: 'var(--color-border)',
             }}
           />
+          {pasteUploading && (
+            <div
+              className="absolute right-2 bottom-2 text-xs px-2 py-0.5 rounded-md"
+              style={{
+                background: 'var(--color-card)',
+                color: 'var(--color-muted-foreground)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              กำลังอัปโหลดรูป…
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { EmailService } from '../email/email.service'
+import { NotificationsService } from '../notifications/notifications.service'
 import { CreateTaskDto } from './dto/create-task.dto'
 import { UpdateTaskDto } from './dto/update-task.dto'
 import { MoveTaskDto } from './dto/move-task.dto'
@@ -22,6 +23,7 @@ export class TasksService {
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
+    private notifications: NotificationsService,
   ) {}
 
   async findAll(projectId: string) {
@@ -60,6 +62,12 @@ export class TasksService {
         data: assigneeIds.map((uid) => ({ taskId: task.id, userId: uid })),
         skipDuplicates: true,
       })
+      // Notify newly-assigned users (besides the creator) so any open
+      // notification view in their browser refreshes immediately.
+      this.notifications.publishMany(
+        assigneeIds.filter((uid) => uid !== userId),
+        { type: 'assign', data: { taskId: task.id } },
+      )
       return this.prisma.task.findUnique({
         where: { id: task.id },
         include: {
@@ -92,6 +100,14 @@ export class TasksService {
     const { assigneeIds, ...rest } = dto
 
     if (assigneeIds !== undefined) {
+      // Snapshot existing assignees so we can diff for "new assignment"
+      // notifications (avoids re-pinging users who were already on the task).
+      const existing = await this.prisma.taskAssignee.findMany({
+        where: { taskId },
+        select: { userId: true },
+      })
+      const previousIds = new Set(existing.map((a) => a.userId))
+
       const task = await this.prisma.$transaction(async (tx) => {
         await tx.taskAssignee.deleteMany({ where: { taskId } })
         if (assigneeIds.length > 0) {
@@ -114,6 +130,17 @@ export class TasksService {
       // Fire email notifications for newly assigned users
       if (assigneeIds.length > 0) {
         void this.fireAssigneeEmails(taskId, task.projectId, assigneeIds, actorId, task.title)
+      }
+
+      // SSE push for *newly* assigned users only (skip the actor + already-assigned).
+      const newlyAssigned = assigneeIds.filter(
+        (uid) => !previousIds.has(uid) && uid !== actorId,
+      )
+      if (newlyAssigned.length > 0) {
+        this.notifications.publishMany(newlyAssigned, {
+          type: 'assign',
+          data: { taskId },
+        })
       }
 
       return task

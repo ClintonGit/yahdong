@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { EmailService } from '../email/email.service'
+import { NotificationsService } from '../notifications/notifications.service'
 import { CreateCommentDto } from './dto/create-comment.dto'
 
 @Injectable()
@@ -12,6 +13,7 @@ export class CommentsService {
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
+    private notifications: NotificationsService,
   ) {}
 
   async findByTask(taskId: string) {
@@ -57,6 +59,12 @@ export class CommentsService {
       }
       if (notifications.length > 0) {
         await this.prisma.notification.createMany({ data: notifications })
+        // Push SSE event so any tab the mentioned user has open refreshes
+        // immediately instead of waiting for the polling tick.
+        this.notifications.publishMany(
+          notifications.map((n) => n.userId),
+          { type: 'mention', data: { taskId, commentId: comment.id } },
+        )
         // Fire-and-forget mention emails (mirrors tasks.service assign flow).
         for (const target of mentionedMembers) {
           void this.email

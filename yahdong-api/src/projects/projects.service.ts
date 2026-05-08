@@ -4,6 +4,7 @@ import {
 import { randomBytes } from 'crypto'
 import { PrismaService } from '../prisma/prisma.service'
 import { EmailService } from '../email/email.service'
+import { NotificationsService } from '../notifications/notifications.service'
 import { CreateProjectDto } from './dto/create-project.dto'
 import { UpdateProjectDto } from './dto/update-project.dto'
 import { InviteMemberDto } from './dto/invite-member.dto'
@@ -22,6 +23,7 @@ export class ProjectsService {
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
+    private notifications: NotificationsService,
   ) {}
 
   async findAll(userId: string) {
@@ -128,6 +130,13 @@ export class ProjectsService {
         inviteLink,
       })
     }
+
+    // SSE: poke the invitee in case they have a tab open under the same
+    // account (e.g. invited via secondary email).
+    this.notifications.publish(invitee.id, {
+      type: 'invite',
+      data: { projectId },
+    })
 
     return { message: 'Invite sent', email: dto.email }
   }

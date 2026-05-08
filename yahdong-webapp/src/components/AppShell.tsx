@@ -3,9 +3,11 @@ import { MenuIcon } from 'lucide-react'
 import Sidebar from './Sidebar'
 import NotificationBell from './NotificationBell'
 import { useNotificationAlerts } from '../hooks/useNotificationAlerts'
+import { useNotificationStream } from '../hooks/useNotifications'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   useNotificationAlerts()
+  useNotificationStream()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (

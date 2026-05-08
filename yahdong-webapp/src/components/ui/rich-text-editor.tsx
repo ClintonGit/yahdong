@@ -1,23 +1,16 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
-import {
-  BoldIcon,
-  ItalicIcon,
-  Heading1Icon,
-  Heading2Icon,
-  ListIcon,
-  ListOrderedIcon,
-  QuoteIcon,
-  Undo2Icon,
-  Redo2Icon,
-  ImageIcon,
-  MinusIcon,
-} from 'lucide-react'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
+import { Loader2Icon } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import api from '@/lib/axios'
+import { EditorToolbar } from './editor-toolbar'
+import { SlashCommand } from './slash-command'
 
 interface RichTextEditorProps {
   value: string
@@ -27,42 +20,18 @@ interface RichTextEditorProps {
   minHeight?: string
 }
 
-function ToolbarButton({
-  onClick,
-  active,
-  title,
-  children,
-}: {
-  onClick: () => void
-  active?: boolean
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onMouseDown={(e) => { e.preventDefault(); onClick() }}
-      className={cn(
-        'p-1.5 rounded-md transition-colors',
-        active
-          ? 'bg-[var(--color-primary)] text-white'
-          : 'text-[var(--color-muted-foreground)] hover:bg-[var(--color-border-forest)]/40 hover:text-[var(--color-text)]',
-      )}
-    >
-      {children}
-    </button>
-  )
-}
-
 export function RichTextEditor({
   value,
   onChange,
-  placeholder = 'รายละเอียดงาน...',
+  placeholder = 'รายละเอียดงาน... พิมพ์ "/" เพื่อเรียกเมนู',
   className,
   minHeight = '180px',
 }: RichTextEditorProps) {
+  const [uploadingCount, setUploadingCount] = useState(0)
+  const [isMarkdownPreview, setIsMarkdownPreview] = useState(false)
+
   const uploadImage = useCallback(async (file: File): Promise<string | null> => {
+    setUploadingCount((c) => c + 1)
     const form = new FormData()
     form.append('file', file)
     try {
@@ -70,17 +39,55 @@ export function RichTextEditor({
       const base = (import.meta.env.VITE_API_URL ?? 'http://localhost:3001') as string
       return `${base}${res.data.url}`
     } catch {
+      toast.error('อัปโหลดรูปไม่สำเร็จ ลองใหม่อีกครั้งค่ะ')
       return null
+    } finally {
+      setUploadingCount((c) => Math.max(0, c - 1))
     }
   }, [])
+
+  const handleImagePick = useCallback(() => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      const url = await uploadImage(file)
+      // editor reference set after useEditor; we use a dispatched custom event to keep this stable
+      window.dispatchEvent(new CustomEvent('rich-editor:insert-image', { detail: { url } }))
+    }
+    input.click()
+  }, [uploadImage])
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        // StarterKit v3 includes link + underline by default; tweak link options
+        link: {
+          openOnClick: false,
+          autolink: true,
+          linkOnPaste: true,
+          HTMLAttributes: {
+            class: 'underline text-[var(--color-primary)] hover:opacity-80',
+            rel: 'noopener noreferrer nofollow',
+            target: '_blank',
+          },
+        },
       }),
       Image.configure({ inline: false, allowBase64: true }),
       Placeholder.configure({ placeholder }),
+      TaskList.configure({
+        HTMLAttributes: { class: 'task-list space-y-1 list-none pl-0' },
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: { class: 'task-item flex items-start gap-2' },
+      }),
+      SlashCommand.configure({
+        onImageInsert: () => handleImagePick(),
+      }),
     ],
     content: value || '',
     onUpdate: ({ editor }) => {
@@ -90,6 +97,15 @@ export function RichTextEditor({
       attributes: {
         class: 'prose prose-sm focus:outline-none w-full max-w-none',
         style: `min-height: ${minHeight}; color: var(--color-text); font-family: var(--font-family-body, inherit);`,
+      },
+      handleKeyDown(_view, event) {
+        // Ctrl/Cmd+K → open link popover via toolbar event
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+          event.preventDefault()
+          window.dispatchEvent(new CustomEvent('rich-editor:open-link'))
+          return true
+        }
+        return false
       },
       handleDrop(view, event) {
         const files = event.dataTransfer?.files
@@ -129,128 +145,77 @@ export function RichTextEditor({
     },
   })
 
+  // sync external value back when not focused (for prop-driven updates)
+  useEffect(() => {
+    if (!editor) return
+    if (editor.isFocused) return
+    const current = editor.getHTML()
+    if (value !== current) {
+      editor.commands.setContent(value || '', { emitUpdate: false })
+    }
+  }, [value, editor])
+
+  // listen for slash-command/toolbar image-pick result
+  useEffect(() => {
+    if (!editor) return
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ url: string | null }>).detail
+      if (detail?.url) {
+        editor.chain().focus().setImage({ src: detail.url }).run()
+      }
+    }
+    window.addEventListener('rich-editor:insert-image', handler)
+    return () => window.removeEventListener('rich-editor:insert-image', handler)
+  }, [editor])
+
   if (!editor) return null
 
-  const handleImageClick = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (!file) return
-      const url = await uploadImage(file)
-      if (url) editor.chain().focus().setImage({ src: url }).run()
-    }
-    input.click()
+  // Lightweight HTML→markdown-ish preview (visual only, not authoritative)
+  const renderMarkdownPreview = () => {
+    const html = editor.getHTML()
+    return html
   }
 
   return (
     <div
-      className={cn('rounded-xl border overflow-hidden', className)}
+      className={cn('rounded-xl border overflow-hidden relative', className)}
       style={{
         borderColor: 'var(--color-border-forest)',
         background: 'var(--color-card)',
       }}
     >
-      {/* Toolbar */}
-      <div
-        className="flex items-center gap-0.5 px-2 py-1.5 border-b overflow-x-auto"
-        style={{ borderColor: 'var(--color-border-forest)', background: 'var(--color-paper)' }}
-      >
-        <ToolbarButton
-          title="หัวข้อใหญ่ (H1)"
-          active={editor.isActive('heading', { level: 1 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        >
-          <Heading1Icon className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="หัวข้อรอง (H2)"
-          active={editor.isActive('heading', { level: 2 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          <Heading2Icon className="size-3.5" />
-        </ToolbarButton>
-
-        <div className="w-px h-4 mx-1" style={{ background: 'var(--color-border-forest)' }} />
-
-        <ToolbarButton
-          title="ตัวหนา (Ctrl+B)"
-          active={editor.isActive('bold')}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          <BoldIcon className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="ตัวเอียง (Ctrl+I)"
-          active={editor.isActive('italic')}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          <ItalicIcon className="size-3.5" />
-        </ToolbarButton>
-
-        <div className="w-px h-4 mx-1" style={{ background: 'var(--color-border-forest)' }} />
-
-        <ToolbarButton
-          title="รายการ (bullet)"
-          active={editor.isActive('bulletList')}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          <ListIcon className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="รายการ (ordered)"
-          active={editor.isActive('orderedList')}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          <ListOrderedIcon className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="blockquote"
-          active={editor.isActive('blockquote')}
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        >
-          <QuoteIcon className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="เส้นคั่น"
-          active={false}
-          onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        >
-          <MinusIcon className="size-3.5" />
-        </ToolbarButton>
-
-        <div className="w-px h-4 mx-1" style={{ background: 'var(--color-border-forest)' }} />
-
-        <ToolbarButton
-          title="แทรกรูปภาพ"
-          active={false}
-          onClick={handleImageClick}
-        >
-          <ImageIcon className="size-3.5" />
-        </ToolbarButton>
-
-        <div className="flex-1" />
-
-        <ToolbarButton
-          title="ย้อนกลับ (Ctrl+Z)"
-          active={false}
-          onClick={() => editor.chain().focus().undo().run()}
-        >
-          <Undo2Icon className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="ทำซ้ำ (Ctrl+Y)"
-          active={false}
-          onClick={() => editor.chain().focus().redo().run()}
-        >
-          <Redo2Icon className="size-3.5" />
-        </ToolbarButton>
-      </div>
+      <EditorToolbar
+        editor={editor}
+        onImageInsert={handleImagePick}
+        isMarkdownPreview={isMarkdownPreview}
+        onToggleMarkdown={() => setIsMarkdownPreview((v) => !v)}
+      />
 
       {/* Editor area */}
-      <div className="px-3 py-2">
-        <EditorContent editor={editor} />
+      <div className="px-3 py-2 relative">
+        {isMarkdownPreview ? (
+          <div
+            className="prose prose-sm max-w-none"
+            style={{ minHeight, color: 'var(--color-text)' }}
+            dangerouslySetInnerHTML={{ __html: renderMarkdownPreview() }}
+          />
+        ) : (
+          <EditorContent editor={editor} />
+        )}
+
+        {uploadingCount > 0 && (
+          <div
+            className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md text-xs shadow"
+            style={{
+              background: 'var(--color-card)',
+              border: '1px solid var(--color-border-forest)',
+              color: 'var(--color-muted-foreground)',
+            }}
+          >
+            <Loader2Icon className="size-3.5 animate-spin" />
+            <span>กำลังอัปโหลด {uploadingCount > 1 ? `${uploadingCount} รูป` : ''}</span>
+          </div>
+        )}
       </div>
     </div>
   )

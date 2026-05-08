@@ -110,12 +110,9 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         }}
       >
         {/* Logo */}
-        <div
-          className="px-4 py-4 border-b"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
+        <div className="px-4 pt-4 pb-2">
           <h1
-            className="text-xl font-bold"
+            className="text-xl font-bold leading-tight"
             style={{
               fontFamily: 'var(--font-family-heading)',
               color: 'var(--color-primary)',
@@ -123,21 +120,12 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           >
             อย่าดอง
           </h1>
-          <p
-            className="text-xs opacity-60"
-            style={{ color: 'var(--color-text)' }}
-          >
-            yahdong
-          </p>
         </div>
 
         {/* Projects list */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
           {isLoading ? (
             <>
-              <p className="text-xs font-semibold px-2 pb-1 opacity-50 uppercase tracking-wider" style={{ color: 'var(--color-text)' }}>
-                โปรเจค
-              </p>
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-8 w-full rounded-lg mb-1" />
               ))}
@@ -157,11 +145,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                 </>
               )}
 
-              {/* All projects */}
-              <p className="text-xs font-semibold px-2 pb-1 opacity-50 uppercase tracking-wider"
-                style={{ color: 'var(--color-text)' }}>
-                โปรเจค
-              </p>
+              {/* All projects (no header — slim style) */}
               {rest.map((p) => <ProjectLink key={p.id} p={p} />)}
             </>
           )}

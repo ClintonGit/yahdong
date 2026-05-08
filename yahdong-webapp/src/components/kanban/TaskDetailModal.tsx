@@ -8,7 +8,7 @@ import {
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { DatePicker } from '../ui/date-picker'
+import { DateRangePicker } from '../ui/date-range-picker'
 import { RichTextEditor } from '../ui/rich-text-editor'
 import { PaletteIcon, XIcon, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
@@ -269,15 +269,13 @@ export default function TaskDetailModal({ projectId, task, onClose, highlightCom
                   <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
                     ช่วงเวลา
                   </p>
-                  <DatePicker
-                    value={startDate}
-                    onChange={setStartDate}
-                    placeholder="วันเริ่มต้น"
-                  />
-                  <DatePicker
-                    value={dueDate}
-                    onChange={setDueDate}
-                    placeholder="วันสิ้นสุด"
+                  <DateRangePicker
+                    value={{ from: startDate, to: dueDate }}
+                    onChange={(range) => {
+                      setStartDate(range.from ?? '')
+                      setDueDate(range.to ?? '')
+                    }}
+                    placeholder="วันเริ่มต้น - วันสิ้นสุด"
                   />
                 </div>
 
