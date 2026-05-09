@@ -2,6 +2,7 @@ import {
   Body, Controller, Delete, Get, HttpCode, Param,
   Patch, Post, UseGuards,
 } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { ProjectsService } from './projects.service'
 import { CreateProjectDto } from './dto/create-project.dto'
 import { UpdateProjectDto } from './dto/update-project.dto'
@@ -14,23 +15,28 @@ import { ProjectGuard } from '../common/guards/project.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator'
 
+@ApiTags('projects')
+@ApiBearerAuth('access-token')
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
   constructor(private projects: ProjectsService) {}
 
   @Get()
+  @ApiOperation({ summary: 'List projects the current user can see' })
   findAll(@CurrentUser() user: JwtPayload) {
     return this.projects.findAll(user.sub)
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create a project under an organization' })
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateProjectDto) {
     return this.projects.create(user.sub, dto)
   }
 
   @Get(':id')
   @UseGuards(ProjectGuard)
+  @ApiOperation({ summary: 'Get a project by id (member-only)' })
   findOne(@Param('id') id: string) {
     return this.projects.findOne(id)
   }
@@ -38,6 +44,7 @@ export class ProjectsController {
   @Patch(':id')
   @UseGuards(ProjectGuard)
   @Roles('owner')
+  @ApiOperation({ summary: 'Update project metadata (owner)' })
   update(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
     return this.projects.update(id, dto)
   }
@@ -46,6 +53,7 @@ export class ProjectsController {
   @HttpCode(204)
   @UseGuards(ProjectGuard)
   @Roles('owner')
+  @ApiOperation({ summary: 'Soft-delete a project (owner)' })
   remove(@Param('id') id: string) {
     return this.projects.remove(id)
   }

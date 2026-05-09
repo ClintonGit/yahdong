@@ -2,6 +2,7 @@ import {
   Body, Controller, Delete, Get, HttpCode,
   Param, Patch, Post, UseGuards,
 } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { TasksService } from './tasks.service'
 import { CreateTaskDto } from './dto/create-task.dto'
 import { UpdateTaskDto } from './dto/update-task.dto'
@@ -16,17 +17,21 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { ProjectGuard } from '../common/guards/project.guard'
 import { CurrentUser, type JwtPayload } from '../common/decorators/current-user.decorator'
 
+@ApiTags('tasks')
+@ApiBearerAuth('access-token')
 @Controller()
 @UseGuards(JwtAuthGuard, ProjectGuard)
 export class TasksController {
   constructor(private tasks: TasksService) {}
 
   @Get('projects/:id/tasks')
+  @ApiOperation({ summary: 'List tasks for a project' })
   findAll(@Param('id') projectId: string) {
     return this.tasks.findAll(projectId)
   }
 
   @Post('projects/:id/tasks')
+  @ApiOperation({ summary: 'Create a task in a project' })
   create(
     @Param('id') projectId: string,
     @CurrentUser() user: JwtPayload,
@@ -36,11 +41,13 @@ export class TasksController {
   }
 
   @Get('tasks/:taskId')
+  @ApiOperation({ summary: 'Get a task by id' })
   findOne(@Param('taskId') id: string) {
     return this.tasks.findOne(id)
   }
 
   @Patch('tasks/:taskId')
+  @ApiOperation({ summary: 'Update task fields (title, description, dates, etc.)' })
   update(
     @Param('taskId') id: string,
     @Body() dto: UpdateTaskDto,
@@ -51,11 +58,13 @@ export class TasksController {
 
   @Delete('tasks/:taskId')
   @HttpCode(204)
+  @ApiOperation({ summary: 'Soft-delete a task' })
   remove(@Param('taskId') id: string) {
     return this.tasks.remove(id)
   }
 
   @Patch('tasks/:taskId/move')
+  @ApiOperation({ summary: 'Move a task to a different column or position' })
   move(@Param('taskId') id: string, @Body() dto: MoveTaskDto) {
     return this.tasks.move(id, dto)
   }
